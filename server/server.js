@@ -82,6 +82,7 @@ if (isProd) {
 }
 
 app.get('/api/seed', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })
   const { default: Gpu } = await import('./models/Gpu.js')
   const { default: User } = await import('./models/User.js')
   await Gpu.deleteMany({})
@@ -110,3 +111,6 @@ const server = app.listen(PORT, () => {
 
 initSocket(server)
 connectDB()
+
+process.on('SIGTERM', () => { console.log('SIGTERM received. Shutting down...'); server.close(() => process.exit(0)) })
+process.on('SIGINT', () => { console.log('SIGINT received. Shutting down...'); server.close(() => process.exit(0)) })

@@ -16,7 +16,7 @@ router.get('/', protect, async (req, res) => {
   if (search) filter.gpuName = { $regex: search, $options: 'i' }
 
   const sortOption = sort === 'oldest' ? 'createdAt' : '-createdAt'
-  const orders = await Order.find(filter).sort(sortOption).lean().select('gpuName hours cost status instanceStatus region sshHost sshPort sshUser jupyterUrl createdAt')
+  const orders = await Order.find(filter).sort(sortOption).limit(50).lean().select('gpuName hours cost status instanceStatus region sshHost sshPort sshUser jupyterUrl createdAt')
   res.json(orders)
 })
 
