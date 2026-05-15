@@ -1,5 +1,6 @@
 import express from 'express'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 import Order from '../models/Order.js'
 import Gpu from '../models/Gpu.js'
 import User from '../models/User.js'
@@ -22,39 +23,53 @@ router.get('/', protect, async (req, res) => {
 
 router.post('/', protect, async (req, res) => {
   const { gpuId, hours } = req.body
-  const gpu = await Gpu.findById(gpuId)
-  if (!gpu) return res.status(404).json({ message: 'GPU not found' })
+  if (!gpuId || !hours || hours < 1) return res.status(400).json({ message: 'Invalid request' })
+  if (hours > 720) return res.status(400).json({ message: 'Maximum 720 hours (30 days)' })
 
-  const cost = gpu.price * hours
-  const user = await User.findById(req.user._id)
-  if (user.balance < cost) return res.status(400).json({ message: 'Insufficient balance' })
+  const session = await mongoose.startSession()
+  session.startTransaction()
 
-  if (gpu.inStock < 1) return res.status(400).json({ message: 'No stock available' })
+  try {
+    const gpu = await Gpu.findById(gpuId).session(session)
+    if (!gpu) { await session.abortTransaction(); return res.status(404).json({ message: 'GPU not found' }) }
 
-  user.balance -= cost
-  gpu.inStock -= 1
-  await user.save()
-  await gpu.save()
+    const cost = gpu.price * hours
+    const user = await User.findById(req.user._id).session(session)
+    if (user.balance < cost) { await session.abortTransaction(); return res.status(400).json({ message: 'Insufficient balance' }) }
+    if (gpu.inStock < 1) { await session.abortTransaction(); return res.status(400).json({ message: 'No stock available' }) }
 
-  const sshNum = Math.floor(Math.random() * 9000) + 1000
-  const order = await Order.create({
-    user: req.user._id, gpu: gpuId, gpuName: gpu.name,
-    hours, cost, region: 'nepal',
-    sshHost: `compute${sshNum}.hamro.ai`,
-    sshPort: 22 + Math.floor(Math.random() * 1000),
-    sshUser: 'root',
-    jupyterUrl: `https://compute${sshNum}.hamro.ai:8888`,
-  })
+    user.balance -= cost
+    gpu.inStock -= 1
+    await user.save({ session })
+    await gpu.save({ session })
 
-  sendEmail({
-    to: user.email,
-    subject: `Order Confirmed — ${gpu.name}`,
-    html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard">View in Dashboard →</a></p>`,
-  })
+    const sshNum = Math.floor(Math.random() * 9000) + 1000
+    const [order] = await Order.create([{
+      user: req.user._id, gpu: gpuId, gpuName: gpu.name,
+      hours, cost, region: 'nepal',
+      sshHost: `compute${sshNum}.hamro.ai`,
+      sshPort: 22 + Math.floor(Math.random() * 1000),
+      sshUser: 'root',
+      jupyterUrl: `https://compute${sshNum}.hamro.ai:8888`,
+    }], { session })
 
-  await Transaction.create({ user: req.user._id, type: 'rental', amount: -cost, description: `${gpu.name} — ${hours} hrs`, referenceId: order._id.toString() })
+    await Transaction.create([{ user: req.user._id, type: 'rental', amount: -cost, description: `${gpu.name} — ${hours} hrs`, referenceId: order._id.toString() }], { session })
 
-  res.status(201).json(order)
+    await session.commitTransaction()
+
+    sendEmail({
+      to: user.email,
+      subject: `Order Confirmed — ${gpu.name}`,
+      html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard">View in Dashboard →</a></p>`,
+    })
+
+    res.status(201).json(order)
+  } catch (err) {
+    await session.abortTransaction()
+    throw err
+  } finally {
+    session.endSession()
+  }
 })
 
 router.patch('/:id/cancel', protect, async (req, res) => {

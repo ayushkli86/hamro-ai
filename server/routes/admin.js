@@ -41,6 +41,7 @@ router.delete('/gpus/:id', async (req, res) => {
 })
 
 router.post('/seed', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })
   await Gpu.deleteMany({})
   await Gpu.insertMany([
     { name: 'RTX PRO 6000 S', arch: 'Blackwell', vram: '48GB VRAM', vramGB: 48, price: 1.33, rangeLow: 0.73, rangeHigh: 2.00, availability: 'Med', bandwidth: '1.8 TB/s', cpu: 'AMD EPYC 64 vCPU', ram: '256 GB', disk: '1 TB NVMe', description: 'Professional-grade GPU for AI training and inference.', sparkData: [35, 32, 30, 28, 25, 22, 18, 15, 12, 10, 8, 6] },

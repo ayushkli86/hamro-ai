@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
+import { v4 as uuidv4 } from 'uuid'
 import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -35,6 +36,7 @@ const authLimiter = rateLimit({
 
 const app = express()
 app.use(compression())
+app.use((req, res, next) => { req.id = uuidv4().slice(0, 8); res.set('X-Request-Id', req.id); next() })
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
 app.use(cors())
 app.use(express.json({ limit: '100kb' }))
