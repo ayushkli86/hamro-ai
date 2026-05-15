@@ -276,7 +276,7 @@ function RealTimeInfra() {
                 </div>
                 <p className="text-gray-600 text-xs mt-1"><Price usd={card.rangeLow} /> — <Price usd={card.rangeHigh} />/hr range</p>
               </div>
-              <Link to="/dashboard" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors cursor-pointer inline-block text-center no-underline">Rent</Link>
+              <Link to="/explore" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors cursor-pointer inline-block text-center no-underline">Rent</Link>
             </div>
           </div>
         ))}
