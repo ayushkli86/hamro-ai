@@ -4,8 +4,35 @@ import Gpu from '../models/Gpu.js'
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-  const gpus = await Gpu.find({})
-  res.json(gpus)
+  const { search, minPrice, maxPrice, arch, minVram, availability, region, sort, page = 1, limit = 20 } = req.query
+  const filter = {}
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { arch: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+    ]
+  }
+  if (minPrice || maxPrice) {
+    filter.price = {}
+    if (minPrice) filter.price.$gte = parseFloat(minPrice)
+    if (maxPrice) filter.price.$lte = parseFloat(maxPrice)
+  }
+  if (arch) filter.arch = arch
+  if (minVram) filter.vramGB = { $gte: parseInt(minVram) }
+  if (availability) filter.availability = availability
+  if (region) filter.region = region
+
+  const sortOption = sort === 'price_asc' ? 'price' : sort === 'price_desc' ? '-price' : sort === 'name' ? 'name' : sort === 'vram' ? '-vramGB' : '-createdAt'
+  const skip = (parseInt(page) - 1) * parseInt(limit)
+
+  const [gpus, total] = await Promise.all([
+    Gpu.find(filter).sort(sortOption).skip(skip).limit(parseInt(limit)),
+    Gpu.countDocuments(filter),
+  ])
+
+  res.json({ gpus, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) })
 })
 
 router.get('/:id', async (req, res) => {

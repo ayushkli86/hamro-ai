@@ -23,7 +23,11 @@ export const authApi = {
 }
 
 export const gpuApi = {
-  list: () => request('/gpus'),
+  list: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    const data = await request(`/gpus${qs ? `?${qs}` : ''}`)
+    return data.gpus || data
+  },
   get: (id) => request(`/gpus/${id}`),
 }
 

@@ -25,6 +25,7 @@ import StartupProgram from './pages/StartupProgram'
 import Press from './pages/Press'
 import PressKit from './pages/PressKit'
 import Enterprise from './pages/Enterprise'
+import Explore from './pages/Explore'
 import Trust from './pages/Trust'
 import Transactions from './pages/Transactions'
 import NotFound from './pages/NotFound'
@@ -36,6 +37,7 @@ const ITEM_LINKS = {
   'Quickstart': '/docs', 'CLI': '/docs', 'Python SDK': '/docs', 'API': '/docs', 'Docs': '/docs',
   'GPU Cloud': '/products/gpu-cloud', 'Clusters': '/products/clusters', 'Serverless': '/products/serverless',
   'Model Library': '/model-library',
+  'Explore GPUs': '/explore',
   'Hosting': '/hosting', 'Data Centers': '/data-centers', 'Financing': '/financing', 'Hardware': '/hardware',
   'All Use Cases': '/use-cases', 'AI Agents': '/use-cases', 'AI Fine Tuning': '/use-cases',
   'AI Image + Video Generation': '/use-cases', 'AI Text Generation': '/use-cases',
@@ -61,7 +63,7 @@ const NAV_LINKS = {
 
 const NAV_ITEMS = [
   { label: 'Developers', items: ['Quickstart', 'CLI', 'Python SDK', 'API', 'Docs'] },
-  { label: 'Products', items: ['GPU Cloud', 'Clusters', 'Serverless', 'Model Library'] },
+  { label: 'Products', items: ['GPU Cloud', 'Clusters', 'Serverless', 'Model Library', 'Explore GPUs'] },
   { label: 'Hosting', items: ['Hosting', 'Data Centers', 'Financing', 'Hardware', 'Docs'] },
   {
     label: 'Use Cases',
@@ -278,7 +280,7 @@ function RealTimeInfra() {
         ))}
       </div>
       <div className="flex justify-center mt-12">
-        <Link to="/dashboard" className="border border-gray-700 hover:bg-white hover:text-black text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center gap-2 cursor-pointer no-underline inline-flex">
+        <Link to="/explore" className="border border-gray-700 hover:bg-white hover:text-black text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center gap-2 cursor-pointer no-underline inline-flex">
           View All GPUs
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </Link>
@@ -781,6 +783,7 @@ export default function App() {
         <Route path="/press" element={<Press />} />
         <Route path="/press-kit" element={<PressKit />} />
         <Route path="/enterprise" element={<Enterprise />} />
+        <Route path="/explore" element={<Explore />} />
         <Route path="/trust" element={<Trust />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="*" element={<NotFound />} />
