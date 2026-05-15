@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js'
 import gpuRoutes from './routes/gpus.js'
 import orderRoutes from './routes/orders.js'
 import apikeyRoutes from './routes/apikeys.js'
+import sshkeyRoutes from './routes/sshkeys.js'
 import adminRoutes from './routes/admin.js'
 import { initSocket } from './config/socket.js'
 
@@ -41,6 +42,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/gpus', gpuRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/apikeys', apikeyRoutes)
+app.use('/api/sshkeys', sshkeyRoutes)
 app.use('/api/admin', adminRoutes)
 
 if (isProd) {

@@ -25,6 +25,9 @@ export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState([])
   const [keyName, setKeyName] = useState('')
   const [newKey, setNewKey] = useState('')
+  const [sshKeys, setSshKeys] = useState([])
+  const [sshName, setSshName] = useState('')
+  const [sshPublicKey, setSshPublicKey] = useState('')
 
   const loadOrders = () => {
     const params = {}
@@ -52,6 +55,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     apiKeyApi.list().then(setApiKeys).catch(() => {})
+    fetch('http://localhost:5000/api/sshkeys', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()).then(setSshKeys).catch(() => {})
   }, [])
 
   const rent = async (gpuId) => {
@@ -185,7 +189,7 @@ export default function Dashboard() {
         )}
 
         <div className="flex gap-4 mb-6 border-b border-white/10">
-          {['orders', 'apikeys'].map((s) => (
+          {['orders', 'apikeys', 'sshkeys'].map((s) => (
             <button key={s} onClick={() => setSection(s)}
               className={`pb-3 text-sm font-medium border-b-2 transition cursor-pointer bg-transparent ${section === s ? 'border-blue-500 text-white' : 'border-transparent text-gray-500 hover:text-white'}`}>
               {s === 'orders' ? `Orders (${orders.length})` : 'API Keys'}
@@ -231,19 +235,34 @@ export default function Dashboard() {
                       <p className="text-sm text-gray-400">{order.hours} hrs — <Price usd={order.cost} /> — {order.region}</p>
                       <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-xs px-2 py-1 rounded ${order.status === 'active' ? 'bg-green-900 text-green-400' : order.status === 'cancelled' ? 'bg-red-900 text-red-400' : 'bg-gray-800 text-gray-400'}`}>{order.status}</span>
-                      {order.status === 'active' && (
-                        <button onClick={() => cancel(order._id)} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Cancel</button>
+                      {order.instanceStatus && (
+                        <span className={`text-xs px-2 py-1 rounded ${order.instanceStatus === 'running' ? 'bg-green-900 text-green-400' : order.instanceStatus === 'provisioning' ? 'bg-blue-900 text-blue-400' : order.instanceStatus === 'stopped' ? 'bg-yellow-900 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{order.instanceStatus}</span>
                       )}
-                      <a href={`${import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
+                      {order.status === 'active' && order.instanceStatus === 'running' && (
+                        <button onClick={async () => {
+                          try { const o = await orderApi.instanceAction(order._id, 'stop'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance stopping', 'warning') }
+                          catch (err) { toast(err.message, 'error') }
+                        }} className="text-xs text-yellow-400 hover:text-yellow-300 cursor-pointer bg-transparent border-none">Stop</button>
+                      )}
+                      {order.status === 'active' && order.instanceStatus === 'stopped' && (
+                        <button onClick={async () => {
+                          try { const o = await orderApi.instanceAction(order._id, 'start'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance starting', 'success') }
+                          catch (err) { toast(err.message, 'error') }
+                        }} className="text-xs text-green-400 hover:text-green-300 cursor-pointer bg-transparent border-none">Start</button>
+                      )}
+                      {order.status === 'active' && (
+                        <button onClick={() => cancel(order._id)} className="text-xs text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Cancel</button>
+                      )}
+                      <a href={`${import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </>
-        ) : (
+          ) : section === 'apikeys' ? (
           <div>
             <div className="bg-[#161616] border border-gray-800 rounded-xl p-6 mb-6">
               <h3 className="font-bold mb-4">Create API Key</h3>
@@ -252,13 +271,8 @@ export default function Dashboard() {
                   className="flex-1 bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500" />
                 <button onClick={async () => {
                   if (!keyName) return toast('Enter a key name', 'error')
-                  try {
-                    const k = await apiKeyApi.create(keyName)
-                    setApiKeys((prev) => [k, ...prev])
-                    setNewKey(k.key)
-                    setKeyName('')
-                    toast('API key created — copy it now, you won\'t see it again', 'success')
-                  } catch (err) { toast(err.message, 'error') }
+                  try { const k = await apiKeyApi.create(keyName); setApiKeys((prev) => [k, ...prev]); setNewKey(k.key); setKeyName(''); toast('API key created', 'success') }
+                  catch (err) { toast(err.message, 'error') }
                 }} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg transition cursor-pointer text-sm">Create Key</button>
               </div>
             </div>
@@ -283,7 +297,39 @@ export default function Dashboard() {
                   }} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Revoke</button>
                 </div>
               ))}
-              {apiKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No API keys yet. Create one above.</p>}
+              {apiKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No API keys yet.</p>}
+            </div>
+          </div>
+          ) : (
+          <div>
+            <div className="bg-[#161616] border border-gray-800 rounded-xl p-6 mb-6">
+              <h3 className="font-bold mb-4">Add SSH Key</h3>
+              <div className="space-y-3">
+                <input type="text" placeholder="Key name (e.g. My Laptop)" value={sshName} onChange={(e) => setSshName(e.target.value)}
+                  className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500" />
+                <textarea placeholder="Paste your public SSH key (starts with ssh-rsa, ssh-ed25519, etc.)" value={sshPublicKey} onChange={(e) => setSshPublicKey(e.target.value)} rows={3}
+                  className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500" />
+                <button onClick={async () => {
+                  if (!sshName || !sshPublicKey) return toast('Fill in all fields', 'error')
+                  try { const k = await fetch('http://localhost:5000/api/sshkeys', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` }, body: JSON.stringify({ name: sshName, publicKey: sshPublicKey }) }).then(r => r.json()); setSshKeys((prev) => [k, ...prev]); setSshName(''); setSshPublicKey(''); toast('SSH key added', 'success') }
+                  catch (err) { toast(err.message, 'error') }
+                }} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg transition cursor-pointer text-sm">Add Key</button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {sshKeys.map((k) => (
+                <div key={k._id} className="bg-[#161616] border border-gray-800 rounded-lg p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-sm">{k.name}</p>
+                    <p className="text-xs text-gray-500 font-mono">{k.fingerprint || k.publicKey?.slice(0, 40)}...</p>
+                  </div>
+                  <button onClick={async () => {
+                    try { await fetch(`http://localhost:5000/api/sshkeys/${k._id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user?.token}` } }); setSshKeys((prev) => prev.filter((x) => x._id !== k._id)); toast('SSH key removed', 'warning') }
+                    catch (err) { toast(err.message, 'error') }
+                  }} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Remove</button>
+                </div>
+              ))}
+              {sshKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No SSH keys yet. Add one above.</p>}
             </div>
           </div>
         )}

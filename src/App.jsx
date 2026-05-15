@@ -25,6 +25,8 @@ import StartupProgram from './pages/StartupProgram'
 import Press from './pages/Press'
 import PressKit from './pages/PressKit'
 import Enterprise from './pages/Enterprise'
+import Trust from './pages/Trust'
+import Transactions from './pages/Transactions'
 import NotFound from './pages/NotFound'
 import ThemeToggle from './components/ThemeToggle'
 import CurrencyToggle from './components/CurrencyToggle'
@@ -41,11 +43,12 @@ const ITEM_LINKS = {
   'Batch Data Processing': '/use-cases', 'GPU Programming': '/use-cases',
   'Graphics Rendering': '/use-cases', 'Virtual Computing': '/use-cases',
   'Press Kit': '/press-kit', 'About': '/about', 'Blog': '/blog', 'Careers': '/careers', 'Enterprise': '/enterprise',
+  'Trust Center': '/trust', 'Security': '/trust',
   'Case Studies': '/case-studies', 'Startup Program': '/startup-program', 'FAQ': '/faq',
   'Press Releases': '/press', 'Pricing': '/pricing', 'Contact Sales': '/contact',
   'Investor Inquiries': '/contact', 'Terms of Service': '/legal/terms',
   'Privacy Policy': '/legal/privacy', 'Compliance': '/legal/compliance',
-  'Vulnerability Disclosure': '/legal/disclosure', 'Data Processing': '/legal/data-processing',
+  'Vulnerability Disclosure': '/legal/disclosure', 'Data Processing': '/legal/data-processing', 'Transactions': '/transactions',
 }
 
 const NAV_LINKS = {
@@ -682,6 +685,7 @@ function Footer() {
     Developers: ['CLI', 'Python SDK', 'API Reference', 'Documentation'],
     Resources: ['Enterprise', 'Startup Program', 'Pricing', 'Use Cases', 'Docs', 'FAQs', 'Press Kit', 'Press Releases'],
     Community: ['Discord', 'GitHub', 'Twitter', 'YouTube'],
+    Trust: ['Trust Center', 'Vulnerability Disclosure', 'Data Processing'],
     Contact: ['Contact Sales', 'Investor Inquiries'],
     Legal: ['Terms of Service', 'Privacy Policy', 'Compliance', 'Vulnerability Disclosure', 'Data Processing'],
   }
@@ -777,6 +781,8 @@ export default function App() {
         <Route path="/press" element={<Press />} />
         <Route path="/press-kit" element={<PressKit />} />
         <Route path="/enterprise" element={<Enterprise />} />
+        <Route path="/trust" element={<Trust />} />
+        <Route path="/transactions" element={<Transactions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

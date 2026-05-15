@@ -57,6 +57,17 @@ router.patch('/:id/cancel', protect, async (req, res) => {
   res.json(order)
 })
 
+router.patch('/:id/instance', protect, async (req, res) => {
+  const { action } = req.body
+  const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+  if (!order) return res.status(404).json({ message: 'Order not found' })
+  const actions = { start: 'running', stop: 'stopped', terminate: 'terminated' }
+  if (!actions[action]) return res.status(400).json({ message: 'Invalid action' })
+  order.instanceStatus = actions[action]
+  await order.save()
+  res.json(order)
+})
+
 router.get('/:id/invoice', async (req, res) => {
   let userId
   try {

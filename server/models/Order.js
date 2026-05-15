@@ -7,6 +7,7 @@ const orderSchema = new mongoose.Schema({
   hours: { type: Number, required: true },
   cost: { type: Number, required: true },
   status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
+  instanceStatus: { type: String, enum: ['provisioning', 'running', 'stopping', 'stopped', 'terminated'], default: 'provisioning' },
   region: { type: String, default: 'nepal' },
 }, { timestamps: true })
 

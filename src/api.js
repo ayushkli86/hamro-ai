@@ -34,6 +34,7 @@ export const orderApi = {
   },
   create: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
   cancel: (id) => request(`/orders/${id}/cancel`, { method: 'PATCH' }),
+  instanceAction: (id, action) => request(`/orders/${id}/instance`, { method: 'PATCH', body: JSON.stringify({ action }) }),
 }
 
 export const apiKeyApi = {
