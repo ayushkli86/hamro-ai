@@ -38,6 +38,7 @@ app.use(compression())
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
 app.use(cors())
 app.use(express.json({ limit: '100kb' }))
+app.use((req, res, next) => { res.set('X-RateLimit-Limit', '200'); next() })
 app.use('/api/', limiter)
 app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/signup', authLimiter)
@@ -72,6 +73,11 @@ app.use('/api/subscribe', subscribeRoutes)
 app.use('/api/admin', adminRoutes)
 
 app.use('/api/*', (req, res) => res.status(404).json({ message: 'API route not found' }))
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.message)
+  res.status(500).json({ message: isProd ? 'Internal server error' : err.message })
+})
 
 if (isProd) {
   app.use(express.static(path.join(__dirname, '..', 'dist')))
