@@ -17,7 +17,7 @@ export default function DataCenters() {
     <PageLayout title="Data Centers" subtitle="40+ data center locations worldwide. Deploy close to your users.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
         {REGIONS.map((r) => (
-          <div key={r.name} className="bg-[#161616] border border-gray-800 rounded-xl p-5">
+          <div key={r.name} className="bg-[#161616] border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition">
             <span className="text-3xl block mb-2">{r.flag}</span>
             <h3 className="font-bold text-sm">{r.name}</h3>
             <p className="text-gray-500 text-xs mt-1">{r.desc}</p>

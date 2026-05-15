@@ -23,6 +23,7 @@ import Hardware from './pages/Hardware'
 import Careers from './pages/Careers'
 import StartupProgram from './pages/StartupProgram'
 import Press from './pages/Press'
+import NotFound from './pages/NotFound'
 import ThemeToggle from './components/ThemeToggle'
 import CurrencyToggle from './components/CurrencyToggle'
 import Price from './components/Price'
@@ -532,32 +533,44 @@ const TESTIMONIALS = [
 
 function Testimonials() {
   const [idx, setIdx] = useState(0)
+  const [fade, setFade] = useState(true)
   const t = TESTIMONIALS[idx]
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setIdx((prev) => (prev + 1) % TESTIMONIALS.length)
+        setFade(true)
+      }, 300)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <section className="py-[60px] md:py-[80px]">
       <div className="max-w-[1280px] mx-auto px-[32px] lg:px-[40px] 2xl:px-0">
         <section className="rounded-lg p-[40px] md:p-[60px] bg-white/5 border border-white/10">
           <blockquote className="m-0">
-            <p className="font-['Roboto',sans-serif] font-normal text-[20px] md:text-[24px] lg:text-[28px] leading-[1.4] text-white m-0">
+            <p className={`font-['Roboto',sans-serif] font-normal text-[20px] md:text-[24px] lg:text-[28px] leading-[1.4] text-white m-0 transition-opacity duration-300 ${fade ? 'opacity-100' : 'opacity-0'}`}>
               &ldquo;{t.text}&rdquo;
             </p>
             <footer className="mt-6">
-              <p className="font-['Roboto',sans-serif] font-normal text-[16px] md:text-[18px] text-white/60 m-0">{t.name}<span className="text-white/40">, {t.title}</span></p>
+              <p className={`font-['Roboto',sans-serif] font-normal text-[16px] md:text-[18px] text-white/60 m-0 transition-opacity duration-300 ${fade ? 'opacity-100' : 'opacity-0'}`}>{t.name}<span className="text-white/40">, {t.title}</span></p>
             </footer>
           </blockquote>
           <div className="flex items-center justify-center gap-[48px] mt-10">
-            <button onClick={() => setIdx((idx - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)} className="text-white/60 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-2" aria-label="Previous testimonial">
+            <button onClick={() => { setIdx((idx - 1 + TESTIMONIALS.length) % TESTIMONIALS.length); setFade(true) }} className="text-white/60 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-2" aria-label="Previous testimonial">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
               </svg>
             </button>
             <div className="flex gap-2">
               {TESTIMONIALS.map((_, i) => (
-                <button key={i} onClick={() => setIdx(i)} className={`w-2 h-2 rounded-full transition cursor-pointer border-none ${i === idx ? 'bg-white' : 'bg-white/30'}`} />
+                <button key={i} onClick={() => { setIdx(i); setFade(true) }} className={`w-2 h-2 rounded-full transition cursor-pointer border-none ${i === idx ? 'bg-white' : 'bg-white/30'}`} />
               ))}
             </div>
-            <button onClick={() => setIdx((idx + 1) % TESTIMONIALS.length)} className="text-white/60 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-2" aria-label="Next testimonial">
+            <button onClick={() => { setIdx((idx + 1) % TESTIMONIALS.length); setFade(true) }} className="text-white/60 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-2" aria-label="Next testimonial">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
               </svg>
@@ -760,6 +773,7 @@ export default function App() {
         <Route path="/careers" element={<Careers />} />
         <Route path="/startup-program" element={<StartupProgram />} />
         <Route path="/press" element={<Press />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   )

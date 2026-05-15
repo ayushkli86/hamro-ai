@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { CurrencyProvider } from './context/CurrencyContext'
 import { SocketProvider } from './context/SocketContext'
 import './index.css'
+import ScrollToTop from './components/ScrollToTop'
 import App from './App.jsx'
 
 if ('serviceWorker' in navigator) {
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <ThemeProvider>
       <CurrencyProvider>
+      <ScrollToTop />
       <AuthProvider>
         <SocketProvider>
           <ToastProvider>

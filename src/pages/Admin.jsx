@@ -6,6 +6,7 @@ import Spinner from '../components/Spinner'
 import Price from '../components/Price'
 
 export default function Admin() {
+  useEffect(() => { document.title = 'Admin — hamro.ai' }, [])
   const { user, logout } = useAuth()
   const toast = useToast()
   const [tab, setTab] = useState('overview')

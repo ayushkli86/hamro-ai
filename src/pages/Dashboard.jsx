@@ -2,15 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { gpuApi, orderApi } from '../api'
-import Spinner from '../components/Spinner'
-import ThemeToggle from '../components/ThemeToggle'
-import CurrencyToggle from '../components/CurrencyToggle'
-import Price from '../components/Price'
-import PaymentModal from '../components/PaymentModal'
-import { useSocket } from '../context/SocketContext'
 
 export default function Dashboard() {
+  useEffect(() => { document.title = 'Dashboard — hamro.ai' }, [])
   const { user, logout, refreshUser } = useAuth()
   const toast = useToast()
   const [gpus, setGpus] = useState([])
@@ -101,9 +95,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      <header className="border-b px-4 md:px-8 py-4 flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+      <header className="border-b px-4 md:px-8 py-3 md:py-4 flex flex-wrap items-center gap-2 justify-between" style={{ borderColor: 'var(--border)' }}>
         <h1 className="text-lg md:text-xl font-bold">hamro.ai</h1>
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3">
           <span className="text-green-400 text-sm md:text-base"><Price usd={user?.balance || 0} /></span>
           <span className="text-gray-400 text-sm hidden sm:inline">{user?.name}</span>
           <CurrencyToggle />
@@ -139,9 +133,15 @@ export default function Dashboard() {
 
         <h2 className="text-xl md:text-2xl font-bold mb-4">Available GPUs in Nepal</h2>
         {loading ? (
-          <div className="flex justify-center py-20"><Spinner size={40} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12">
+            {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+          </div>
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500 py-10 text-center">No GPUs match your filters.</p>
+          <div className="text-center py-12">
+            <svg className="mx-auto mb-3 text-gray-600" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <p className="text-gray-500 text-sm">No GPUs match your filters.</p>
+            <p className="text-gray-600 text-xs mt-1">Try changing your search or price range.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12">
             {filtered.map((gpu) => (
@@ -175,7 +175,7 @@ export default function Dashboard() {
         )}
 
         <div className="flex flex-col md:flex-row gap-3 mb-4 items-start md:items-center">
-          <h2 className="text-xl md:text-2xl font-bold flex-1">My Orders</h2>
+          <h2 className="text-xl md:text-2xl font-bold flex-1 flex items-center gap-3">My Orders {orders.length > 0 && <span className="text-sm bg-[#315fff] text-white px-2.5 py-0.5 rounded-full font-normal">{orders.length}</span>}</h2>
           <div className="flex gap-2 w-full md:w-auto">
             <input type="text" placeholder="Search GPU..." value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)}
               className="bg-[#0d1117] border border-white/10 rounded-lg px-3 py-2 text-white text-sm w-full md:w-44 focus:outline-none focus:border-blue-500" />
@@ -196,7 +196,11 @@ export default function Dashboard() {
         {loading ? (
           <div className="flex justify-center py-10"><Spinner size={30} /></div>
         ) : orders.length === 0 ? (
-          <p className="text-gray-500">No orders match your filters.</p>
+          <div className="text-center py-12">
+            <svg className="mx-auto mb-4 text-gray-600" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <p className="text-gray-500 text-sm">No orders match your filters.</p>
+            <p className="text-gray-600 text-xs mt-1">Try adjusting your search or filter criteria.</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (

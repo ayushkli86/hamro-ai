@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Signup() {
+  useEffect(() => { document.title = 'Sign Up — hamro.ai' }, [])
   const { signup } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
