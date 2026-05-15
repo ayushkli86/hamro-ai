@@ -684,6 +684,7 @@ function CTA() {
 
 function Footer() {
   const [footerEmail, setFooterEmail] = useState('')
+  const [footerMsg, setFooterMsg] = useState('')
   const cols = {
     Products: ['GPU Cloud', 'Clusters', 'Hosting'],
     Developers: ['CLI', 'Python SDK', 'API Reference', 'Documentation'],
@@ -702,10 +703,22 @@ function Footer() {
             <div className="flex flex-col gap-6 w-full max-w-[320px]">
               <img alt="hamro.ai" width="40" height="45" src="./vast_logo.svg" />
               <p className="text-white text-[18px] font-bold m-0">Subscribe for our product updates.</p>
-              <form className="flex w-full border-b border-white/20 pb-2" onSubmit={(e) => { e.preventDefault(); if (footerEmail) { alert('Thanks for subscribing!'); setFooterEmail('') } }}>
+              <form className="flex w-full border-b border-white/20 pb-2" onSubmit={async (e) => {
+                e.preventDefault()
+                if (!footerEmail) return
+                try {
+                  const API = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'
+                  const res = await fetch(`${API}/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: footerEmail }) })
+                  const data = await res.json()
+                  setFooterMsg(data.message || 'Subscribed!')
+                  setFooterEmail('')
+                  setTimeout(() => setFooterMsg(''), 3000)
+                } catch { setFooterMsg('Error subscribing') }
+              }}>
                 <input type="email" placeholder="Your email" value={footerEmail} onChange={(e) => setFooterEmail(e.target.value)} className="text-[18px] w-full bg-transparent outline-none text-white placeholder:text-white/50 font-medium" />
                 <button type="submit" className="bg-transparent p-2 text-white cursor-pointer text-[21px]">→</button>
               </form>
+              {footerMsg && <p className="text-xs text-green-400">{footerMsg}</p>}
               <p className="text-white/40 text-[13px] hidden xl:block m-0">© 2026 hamro.ai. All rights reserved.</p>
             </div>
           </div>
