@@ -10,7 +10,7 @@ const CERTIFICATIONS = [
 const CONTROLS = [
   { title: 'Encryption at Rest', desc: 'All customer data encrypted using AES-256. Storage volumes use per-volume encryption keys.' },
   { title: 'Encryption in Transit', desc: 'TLS 1.3 for all API traffic. WireGuard VPN available for private network paths.' },
-  { title: 'Access Control', desc: 'Role-based access control (RBAC) with multi-factor authentication support.' },
+  { title: 'Access Control', desc: 'Role-based access control (RBAC) with multi-factor authentication support including authenticator apps.' },
   { title: 'Audit Logging', desc: 'Comprehensive audit trails for all infrastructure and administrative actions.' },
   { title: 'Network Security', desc: 'Isolated tenant environments with firewall rules and DDoS protection.' },
   { title: 'Incident Response', desc: '24/7 security monitoring with documented incident response procedures.' },

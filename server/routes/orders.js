@@ -5,6 +5,7 @@ import Gpu from '../models/Gpu.js'
 import User from '../models/User.js'
 import protect from '../middleware/auth.js'
 import { sendEmail } from '../config/email.js'
+import Transaction from '../models/Transaction.js'
 
 const router = express.Router()
 
@@ -35,16 +36,23 @@ router.post('/', protect, async (req, res) => {
   await user.save()
   await gpu.save()
 
+  const sshNum = Math.floor(Math.random() * 9000) + 1000
   const order = await Order.create({
     user: req.user._id, gpu: gpuId, gpuName: gpu.name,
     hours, cost, region: 'nepal',
+    sshHost: `compute${sshNum}.hamro.ai`,
+    sshPort: 22 + Math.floor(Math.random() * 1000),
+    sshUser: 'root',
+    jupyterUrl: `https://compute${sshNum}.hamro.ai:8888`,
   })
 
   sendEmail({
     to: user.email,
     subject: `Order Confirmed — ${gpu.name}`,
-    html: `<h2>Order Confirmed 🎉</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard">View in Dashboard →</a></p>`,
+    html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard">View in Dashboard →</a></p>`,
   })
+
+  await Transaction.create({ user: req.user._id, type: 'rental', amount: -cost, description: `${gpu.name} — ${hours} hrs`, referenceId: order._id.toString() })
 
   res.status(201).json(order)
 })

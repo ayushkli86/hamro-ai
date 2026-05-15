@@ -9,6 +9,10 @@ const orderSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
   instanceStatus: { type: String, enum: ['provisioning', 'running', 'stopping', 'stopped', 'terminated'], default: 'provisioning' },
   region: { type: String, default: 'nepal' },
+  sshHost: { type: String, default: '' },
+  sshPort: { type: Number, default: 22 },
+  sshUser: { type: String, default: 'root' },
+  jupyterUrl: { type: String, default: '' },
 }, { timestamps: true })
 
 export default mongoose.model('Order', orderSchema)

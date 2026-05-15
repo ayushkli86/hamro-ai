@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import protect from '../middleware/auth.js'
 import { sendEmail } from '../config/email.js'
+import Transaction from '../models/Transaction.js'
 
 const router = express.Router()
 
@@ -46,6 +47,7 @@ router.post('/topup', protect, async (req, res) => {
   if (!amount || amount < 1) return res.status(400).json({ message: 'Amount must be at least $1' })
   req.user.balance += amount
   await req.user.save()
+  await Transaction.create({ user: req.user._id, type: 'topup', amount, description: `Added $${amount} to balance` })
   res.json({ balance: req.user.balance, message: `$${amount} added to your balance` })
 })
 

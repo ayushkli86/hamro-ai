@@ -29,6 +29,7 @@ import Explore from './pages/Explore'
 import Trust from './pages/Trust'
 import Transactions from './pages/Transactions'
 import NotFound from './pages/NotFound'
+import ErrorBoundary from './components/ErrorBoundary'
 import ThemeToggle from './components/ThemeToggle'
 import CurrencyToggle from './components/CurrencyToggle'
 import Price from './components/Price'
@@ -51,6 +52,7 @@ const ITEM_LINKS = {
   'Investor Inquiries': '/contact', 'Terms of Service': '/legal/terms',
   'Privacy Policy': '/legal/privacy', 'Compliance': '/legal/compliance',
   'Vulnerability Disclosure': '/legal/disclosure', 'Data Processing': '/legal/data-processing', 'Transactions': '/transactions',
+  'Discord': 'https://discord.gg/hamroai', 'GitHub': 'https://github.com/hamroai', 'Twitter': 'https://twitter.com/hamroai', 'YouTube': 'https://youtube.com/@hamroai',
 }
 
 const NAV_LINKS = {
@@ -204,7 +206,7 @@ function Hero() {
           </span>
           <h1 className="text-left text-[2.5rem] md:text-[3rem] lg:text-[68px] font-bold text-white leading-[1.1] m-0">Agent-Ready AI<br />Infrastructure.</h1>
           <p className="text-[0.9rem] md:text-[0.95rem] lg:text-[1rem] text-white -mt-1 mb-6 leading-relaxed sans-font">
-            hamro.ai is the infrastructure layer where AI agents autonomously design, procure, and optimize their own compute.
+            hamro.ai is the infrastructure layer where AI agents autonomously design, procure, and optimize their own compute. Per-second billing. Real-time pricing. No lock-in.
           </p>
           <form className="mt-2 flex flex-col w-full max-w-[560px]" onSubmit={(e) => { e.preventDefault(); window.location.href = '/signup' }}>
             <div className="flex w-full bg-white rounded-full p-2 md:px-3 gap-3 items-center">
@@ -658,10 +660,10 @@ function CTA() {
         <div className="relative z-10 px-[40px] md:px-[90px] py-[80px] md:py-[120px]">
           <div className="max-w-[1080px] mx-auto flex flex-col items-center text-center">
             <h2 className="font-['Roboto',sans-serif] font-semibold text-[32px] md:text-[40px] lg:text-[48px] leading-[1.2] text-white m-0 max-w-[800px]">
-              Start with $5. Scale to 20,000 GPUs.
+              Start with $5. Scale to 20,000 GPUs. Per-second billing.
             </h2>
             <p className="font-['Roboto',sans-serif] font-normal text-[16px] md:text-[18px] leading-[26px] text-white/80 mt-2 m-0 max-w-[800px]">
-              No humans required.
+              No humans required. No minimums. No lock-in.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
               <Link to="/signup"
@@ -715,7 +717,11 @@ function Footer() {
                 <ul className="flex flex-col gap-3 list-none m-0 p-0">
                   {links.map((link) => (
                     <li key={link}>
-                      <Link to={ITEM_LINKS[link] || '/'} className="text-white/70 text-[16px] font-heading font-medium no-underline hover:text-[#a8bbff] transition-colors duration-150">{link}</Link>
+                    {(() => {
+                      const url = ITEM_LINKS[link] || '/'
+                      if (url.startsWith('http')) return <a href={url} target="_blank" rel="noopener noreferrer" className="text-white/70 text-[16px] font-heading font-medium no-underline hover:text-[#a8bbff] transition-colors duration-150">{link}</a>
+                      return <Link to={url} className="text-white/70 text-[16px] font-heading font-medium no-underline hover:text-[#a8bbff] transition-colors duration-150">{link}</Link>
+                    })()}
                     </li>
                   ))}
                 </ul>
@@ -761,7 +767,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/pricing" element={<Pricing />} />

@@ -2,5 +2,6 @@ import { useCurrency } from '../context/CurrencyContext'
 
 export default function Price({ usd, className = '' }) {
   const { formatPrice } = useCurrency()
-  return <span className={className}>{formatPrice(usd)}</span>
+  const val = typeof usd === 'number' ? usd : 0
+  return <span className={className}>{formatPrice(val)}</span>
 }

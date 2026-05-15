@@ -2,8 +2,15 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { apiKeyApi } from '../api'
+import { useSocket } from '../context/SocketContext'
+import { apiKeyApi, gpuApi, orderApi } from '../api'
 import Spinner from '../components/Spinner'
+import Price from '../components/Price'
+import SkeletonCard from '../components/SkeletonCard'
+import ThemeToggle from '../components/ThemeToggle'
+import CurrencyToggle from '../components/CurrencyToggle'
+import ConfirmDialog from '../components/ConfirmDialog'
+import PaymentModal from '../components/PaymentModal'
 
 export default function Dashboard() {
   useEffect(() => { document.title = 'Dashboard — hamro.ai' }, [])
@@ -28,6 +35,7 @@ export default function Dashboard() {
   const [sshKeys, setSshKeys] = useState([])
   const [sshName, setSshName] = useState('')
   const [sshPublicKey, setSshPublicKey] = useState('')
+  const [confirm, setConfirm] = useState(null)
 
   const loadOrders = () => {
     const params = {}
@@ -60,6 +68,12 @@ export default function Dashboard() {
 
   const rent = async (gpuId) => {
     const h = hours[gpuId] || 1
+    const gpu = gpus.find((g) => g._id === gpuId)
+    const cost = (gpu?.price || 0) * h
+    if ((user?.balance || 0) < cost) {
+      setConfirm({ action: 'low-balance', id: gpuId, name: gpu?.name || '', cost })
+      return
+    }
     setRenting(gpuId)
     try {
       const order = await orderApi.create({ gpuId, hours: h })
@@ -229,34 +243,54 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {orders.map((order) => (
-                  <div key={order._id} className="bg-[#161616] border border-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{order.gpuName}</p>
-                      <p className="text-sm text-gray-400">{order.hours} hrs — <Price usd={order.cost} /> — {order.region}</p>
-                      <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <div key={order._id} className="bg-[#161616] border border-gray-800 rounded-lg overflow-hidden">
+                    <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold">{order.gpuName}</p>
+                        <p className="text-sm text-gray-400">{order.hours} hrs — <Price usd={order.cost} /> — {order.region}</p>
+                        <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                        <span className={`text-xs px-2 py-1 rounded ${order.status === 'active' ? 'bg-green-900 text-green-400' : order.status === 'cancelled' ? 'bg-red-900 text-red-400' : 'bg-gray-800 text-gray-400'}`}>{order.status}</span>
+                        {order.instanceStatus && (
+                          <span className={`text-xs px-2 py-1 rounded ${order.instanceStatus === 'running' ? 'bg-green-900 text-green-400' : order.instanceStatus === 'provisioning' ? 'bg-blue-900 text-blue-400' : order.instanceStatus === 'stopped' ? 'bg-yellow-900 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{order.instanceStatus}</span>
+                        )}
+                        {order.status === 'active' && order.instanceStatus === 'running' && (
+                          <button onClick={async () => {
+                            try { const o = await orderApi.instanceAction(order._id, 'stop'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance stopping', 'warning') }
+                            catch (err) { toast(err.message, 'error') }
+                          }} className="text-xs text-yellow-400 hover:text-yellow-300 cursor-pointer bg-transparent border-none">Stop</button>
+                        )}
+                        {order.status === 'active' && order.instanceStatus === 'stopped' && (
+                          <button onClick={async () => {
+                            try { const o = await orderApi.instanceAction(order._id, 'start'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance starting', 'success') }
+                            catch (err) { toast(err.message, 'error') }
+                          }} className="text-xs text-green-400 hover:text-green-300 cursor-pointer bg-transparent border-none">Start</button>
+                        )}
+                        {order.status === 'active' && (
+                          <button onClick={() => setConfirm({ action: 'cancel', id: order._id, name: order.gpuName })} className="text-xs text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Cancel</button>
+                        )}
+                        <a href={`${import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-xs px-2 py-1 rounded ${order.status === 'active' ? 'bg-green-900 text-green-400' : order.status === 'cancelled' ? 'bg-red-900 text-red-400' : 'bg-gray-800 text-gray-400'}`}>{order.status}</span>
-                      {order.instanceStatus && (
-                        <span className={`text-xs px-2 py-1 rounded ${order.instanceStatus === 'running' ? 'bg-green-900 text-green-400' : order.instanceStatus === 'provisioning' ? 'bg-blue-900 text-blue-400' : order.instanceStatus === 'stopped' ? 'bg-yellow-900 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{order.instanceStatus}</span>
-                      )}
-                      {order.status === 'active' && order.instanceStatus === 'running' && (
-                        <button onClick={async () => {
-                          try { const o = await orderApi.instanceAction(order._id, 'stop'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance stopping', 'warning') }
-                          catch (err) { toast(err.message, 'error') }
-                        }} className="text-xs text-yellow-400 hover:text-yellow-300 cursor-pointer bg-transparent border-none">Stop</button>
-                      )}
-                      {order.status === 'active' && order.instanceStatus === 'stopped' && (
-                        <button onClick={async () => {
-                          try { const o = await orderApi.instanceAction(order._id, 'start'); setOrders((prev) => prev.map((x) => x._id === o._id ? o : x)); toast('Instance starting', 'success') }
-                          catch (err) { toast(err.message, 'error') }
-                        }} className="text-xs text-green-400 hover:text-green-300 cursor-pointer bg-transparent border-none">Start</button>
-                      )}
-                      {order.status === 'active' && (
-                        <button onClick={() => cancel(order._id)} className="text-xs text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Cancel</button>
-                      )}
-                      <a href={`${import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
-                    </div>
+                    {order.status === 'active' && order.instanceStatus === 'running' && order.sshHost && (
+                      <div className="border-t border-gray-800 px-4 py-3 bg-[#0d1117]">
+                        <p className="text-xs text-gray-400 mb-2 font-semibold">Connect to Instance</p>
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-600 w-16">SSH:</span>
+                            <code className="text-green-400 font-mono text-xs">ssh {order.sshUser}@{order.sshHost} -p {order.sshPort}</code>
+                            <button onClick={() => { navigator.clipboard?.writeText(`ssh ${order.sshUser}@${order.sshHost} -p ${order.sshPort}`); toast('Copied!', 'success') }} className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer text-xs">Copy</button>
+                          </div>
+                          {order.jupyterUrl && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600 w-16">Jupyter:</span>
+                              <a href={order.jupyterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-mono text-xs">{order.jupyterUrl}</a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -291,10 +325,7 @@ export default function Dashboard() {
                     <p className="font-semibold text-sm">{k.name}</p>
                     <p className="text-xs text-gray-500">Created {new Date(k.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <button onClick={async () => {
-                    try { await apiKeyApi.revoke(k._id); setApiKeys((prev) => prev.filter((x) => x._id !== k._id)); toast('Key revoked', 'warning') }
-                    catch (err) { toast(err.message, 'error') }
-                  }} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Revoke</button>
+                  <button onClick={() => setConfirm({ action: 'revoke', id: k._id, name: k.name })} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Revoke</button>
                 </div>
               ))}
               {apiKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No API keys yet.</p>}
@@ -334,6 +365,20 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+      {confirm && (
+        <ConfirmDialog
+          title={confirm.action === 'cancel' ? 'Cancel Order' : confirm.action === 'low-balance' ? 'Insufficient Balance' : 'Revoke Key'}
+          message={confirm.action === 'cancel' ? `Are you sure you want to cancel the ${confirm.name} order? This will stop your instance.` : confirm.action === 'low-balance' ? `You need <Price usd={confirm.cost} /> to rent ${confirm.name} but your balance is <Price usd={user?.balance || 0} />. Add funds first?` : `Revoke API key "${confirm.name}"? This action cannot be undone.`}
+          confirmLabel={confirm.action === 'cancel' ? 'Cancel Order' : confirm.action === 'low-balance' ? 'Add Funds' : 'Revoke'}
+          onConfirm={async () => {
+            if (confirm.action === 'cancel') { await cancel(confirm.id) }
+            else if (confirm.action === 'low-balance') { setShowPayment(true); setConfirm(null); return }
+            else { try { await apiKeyApi.revoke(confirm.id); setApiKeys((prev) => prev.filter((x) => x._id !== confirm.id)); toast('Key revoked', 'warning') } catch (err) { toast(err.message, 'error') } }
+            setConfirm(null)
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
       {showPayment && (
         <PaymentModal amount={topupAmount} onClose={() => setShowPayment(false)} onSuccess={onPaymentSuccess} />
       )}
