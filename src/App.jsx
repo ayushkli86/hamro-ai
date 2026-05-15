@@ -23,6 +23,8 @@ import Hardware from './pages/Hardware'
 import Careers from './pages/Careers'
 import StartupProgram from './pages/StartupProgram'
 import Press from './pages/Press'
+import PressKit from './pages/PressKit'
+import Enterprise from './pages/Enterprise'
 import NotFound from './pages/NotFound'
 import ThemeToggle from './components/ThemeToggle'
 import CurrencyToggle from './components/CurrencyToggle'
@@ -38,7 +40,7 @@ const ITEM_LINKS = {
   'AI/ML Frameworks': '/use-cases', 'Audio-to-Text Transcription': '/use-cases',
   'Batch Data Processing': '/use-cases', 'GPU Programming': '/use-cases',
   'Graphics Rendering': '/use-cases', 'Virtual Computing': '/use-cases',
-  'About': '/about', 'Blog': '/blog', 'Careers': '/careers', 'Enterprise': '/contact',
+  'Press Kit': '/press-kit', 'About': '/about', 'Blog': '/blog', 'Careers': '/careers', 'Enterprise': '/enterprise',
   'Case Studies': '/case-studies', 'Startup Program': '/startup-program', 'FAQ': '/faq',
   'Press Releases': '/press', 'Pricing': '/pricing', 'Contact Sales': '/contact',
   'Investor Inquiries': '/contact', 'Terms of Service': '/legal/terms',
@@ -678,7 +680,7 @@ function Footer() {
   const cols = {
     Products: ['GPU Cloud', 'Clusters', 'Hosting'],
     Developers: ['CLI', 'Python SDK', 'API Reference', 'Documentation'],
-    Resources: ['Enterprise', 'Startup Program', 'Pricing', 'Use Cases', 'Docs', 'FAQs', 'Press Kit'],
+    Resources: ['Enterprise', 'Startup Program', 'Pricing', 'Use Cases', 'Docs', 'FAQs', 'Press Kit', 'Press Releases'],
     Community: ['Discord', 'GitHub', 'Twitter', 'YouTube'],
     Contact: ['Contact Sales', 'Investor Inquiries'],
     Legal: ['Terms of Service', 'Privacy Policy', 'Compliance', 'Vulnerability Disclosure', 'Data Processing'],
@@ -773,6 +775,8 @@ export default function App() {
         <Route path="/careers" element={<Careers />} />
         <Route path="/startup-program" element={<StartupProgram />} />
         <Route path="/press" element={<Press />} />
+        <Route path="/press-kit" element={<PressKit />} />
+        <Route path="/enterprise" element={<Enterprise />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

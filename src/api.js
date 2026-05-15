@@ -36,6 +36,12 @@ export const orderApi = {
   cancel: (id) => request(`/orders/${id}/cancel`, { method: 'PATCH' }),
 }
 
+export const apiKeyApi = {
+  list: () => request('/apikeys'),
+  create: (name) => request('/apikeys', { method: 'POST', body: JSON.stringify({ name }) }),
+  revoke: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
+}
+
 export const adminApi = {
   users: () => request('/admin/users'),
   orders: () => request('/admin/orders'),
