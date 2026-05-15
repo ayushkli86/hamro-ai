@@ -1,0 +1,29 @@
+import { createContext, useContext, useEffect, useState } from 'react'
+import { io } from 'socket.io-client'
+
+const SocketContext = createContext(null)
+const WS = import.meta.env.PROD ? window.location.origin : 'http://localhost:5000'
+
+export function SocketProvider({ children }) {
+  const [socket, setSocket] = useState(null)
+  const [priceAlerts, setPriceAlerts] = useState([])
+
+  useEffect(() => {
+    const s = io(WS)
+    setSocket(s)
+
+    s.on('priceUpdate', (data) => {
+      setPriceAlerts((prev) => [data, ...prev].slice(0, 10))
+    })
+
+    return () => s.disconnect()
+  }, [])
+
+  return (
+    <SocketContext.Provider value={{ socket, priceAlerts }}>
+      {children}
+    </SocketContext.Provider>
+  )
+}
+
+export const useSocket = () => useContext(SocketContext)
