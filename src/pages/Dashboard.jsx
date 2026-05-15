@@ -12,6 +12,8 @@ import CurrencyToggle from '../components/CurrencyToggle'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PaymentModal from '../components/PaymentModal'
 
+const API = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'
+
 export default function Dashboard() {
   useEffect(() => { document.title = 'Dashboard — hamro.ai' }, [])
   const { user, logout, refreshUser } = useAuth()
@@ -66,7 +68,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     apiKeyApi.list().then(setApiKeys).catch(() => {})
-    fetch('http://localhost:5000/api/sshkeys', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()).then(setSshKeys).catch(() => {})
+    fetch(`${API}/sshkeys`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()).then(setSshKeys).catch(() => {})
   }, [])
 
   const rent = async (gpuId) => {
@@ -274,7 +276,7 @@ export default function Dashboard() {
                         {order.status === 'active' && (
                           <button onClick={() => setConfirm({ action: 'cancel', id: order._id, name: order.gpuName })} className="text-xs text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Cancel</button>
                         )}
-                        <a href={`${import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
+                        <a href={`${API}/orders/${order._id}/invoice?token=${user?.token || ''}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 no-underline">Receipt</a>
                       </div>
                     </div>
                     {order.status === 'active' && order.instanceStatus === 'running' && order.sshHost && (
@@ -346,7 +348,7 @@ export default function Dashboard() {
                   className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500" />
                 <button onClick={async () => {
                   if (!sshName || !sshPublicKey) return toast('Fill in all fields', 'error')
-                  try { const k = await fetch('http://localhost:5000/api/sshkeys', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` }, body: JSON.stringify({ name: sshName, publicKey: sshPublicKey }) }).then(r => r.json()); setSshKeys((prev) => [k, ...prev]); setSshName(''); setSshPublicKey(''); toast('SSH key added', 'success') }
+                  try { const k = await fetch(`${API}/sshkeys`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` }, body: JSON.stringify({ name: sshName, publicKey: sshPublicKey }) }).then(r => r.json()); setSshKeys((prev) => [k, ...prev]); setSshName(''); setSshPublicKey(''); toast('SSH key added', 'success') }
                   catch (err) { toast(err.message, 'error') }
                 }} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg transition cursor-pointer text-sm">Add Key</button>
               </div>
@@ -359,7 +361,7 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-500 font-mono">{k.fingerprint || k.publicKey?.slice(0, 40)}...</p>
                   </div>
                   <button onClick={async () => {
-                    try { await fetch(`http://localhost:5000/api/sshkeys/${k._id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user?.token}` } }); setSshKeys((prev) => prev.filter((x) => x._id !== k._id)); toast('SSH key removed', 'warning') }
+                    try { await fetch(`${API}/sshkeys/${k._id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user?.token}` } }); setSshKeys((prev) => prev.filter((x) => x._id !== k._id)); toast('SSH key removed', 'warning') }
                     catch (err) { toast(err.message, 'error') }
                   }} className="text-sm text-red-400 hover:text-red-300 cursor-pointer bg-transparent border-none">Remove</button>
                 </div>
