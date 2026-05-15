@@ -51,4 +51,14 @@ router.post('/topup', protect, async (req, res) => {
   res.json({ balance: req.user.balance, message: `$${amount} added to your balance` })
 })
 
+router.put('/password', protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body
+  if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password required' })
+  if (newPassword.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' })
+  if (!(await req.user.matchPassword(currentPassword))) return res.status(401).json({ message: 'Current password is incorrect' })
+  req.user.password = newPassword
+  await req.user.save()
+  res.json({ message: 'Password updated' })
+})
+
 export default router

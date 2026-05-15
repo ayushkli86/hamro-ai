@@ -20,6 +20,7 @@ export const authApi = {
   signup: (body) => request('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   me: () => request('/auth/me'),
   topup: (amount) => request('/auth/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
+  changePassword: (currentPassword, newPassword) => request('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
 }
 
 export const gpuApi = {

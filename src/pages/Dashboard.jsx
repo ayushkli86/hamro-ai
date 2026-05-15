@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useSocket } from '../context/SocketContext'
-import { apiKeyApi, gpuApi, orderApi } from '../api'
+import { apiKeyApi, gpuApi, orderApi, authApi } from '../api'
 import Spinner from '../components/Spinner'
 import Price from '../components/Price'
 import SkeletonCard from '../components/SkeletonCard'
@@ -36,6 +36,9 @@ export default function Dashboard() {
   const [sshName, setSshName] = useState('')
   const [sshPublicKey, setSshPublicKey] = useState('')
   const [confirm, setConfirm] = useState(null)
+  const [pwCurrent, setPwCurrent] = useState('')
+  const [pwNew, setPwNew] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
 
   const loadOrders = () => {
     const params = {}
@@ -203,10 +206,10 @@ export default function Dashboard() {
         )}
 
         <div className="flex gap-4 mb-6 border-b border-white/10">
-          {['orders', 'apikeys', 'sshkeys'].map((s) => (
+          {['orders', 'apikeys', 'sshkeys', 'settings'].map((s) => (
             <button key={s} onClick={() => setSection(s)}
               className={`pb-3 text-sm font-medium border-b-2 transition cursor-pointer bg-transparent ${section === s ? 'border-blue-500 text-white' : 'border-transparent text-gray-500 hover:text-white'}`}>
-              {s === 'orders' ? `Orders (${orders.length})` : 'API Keys'}
+              {s === 'orders' ? `Orders (${orders.length})` : s === 'settings' ? 'Settings' : 'API Keys'}
             </button>
           ))}
         </div>
@@ -237,8 +240,9 @@ export default function Dashboard() {
             ) : orders.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="mx-auto mb-4 text-gray-600" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                <p className="text-gray-500 text-sm">No orders match your filters.</p>
-                <p className="text-gray-600 text-xs mt-1">Try adjusting your search or filter criteria.</p>
+                <p className="text-gray-500 text-sm">No orders yet.</p>
+                <p className="text-gray-600 text-xs mt-1">Rent a GPU above to get started. Your instances will appear here.</p>
+                <Link to="/explore" className="inline-block mt-4 text-sm text-[#315fff] hover:underline">Browse Available GPUs →</Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -331,7 +335,7 @@ export default function Dashboard() {
               {apiKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No API keys yet.</p>}
             </div>
           </div>
-          ) : (
+          ) : section === 'sshkeys' ? (
           <div>
             <div className="bg-[#161616] border border-gray-800 rounded-xl p-6 mb-6">
               <h3 className="font-bold mb-4">Add SSH Key</h3>
@@ -361,6 +365,31 @@ export default function Dashboard() {
                 </div>
               ))}
               {sshKeys.length === 0 && <p className="text-gray-500 text-sm text-center py-6">No SSH keys yet. Add one above.</p>}
+            </div>
+          </div>
+          ) : (
+          <div className="max-w-md">
+            <h3 className="font-bold mb-4">Change Password</h3>
+            <div className="space-y-3">
+              <input type="password" placeholder="Current password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
+                className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500" />
+              <input type="password" placeholder="New password (min 6 chars)" value={pwNew} onChange={(e) => setPwNew(e.target.value)}
+                className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500" />
+              <button onClick={async () => {
+                if (!pwCurrent || !pwNew) return toast('Fill in both fields', 'error')
+                if (pwNew.length < 6) return toast('Password must be at least 6 characters', 'error')
+                setPwLoading(true)
+                try { const data = await authApi.changePassword(pwCurrent, pwNew); toast(data.message, 'success'); setPwCurrent(''); setPwNew('') }
+                catch (err) { toast(err.message, 'error') }
+                finally { setPwLoading(false) }
+              }} disabled={pwLoading}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg transition cursor-pointer text-sm">
+                {pwLoading ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+            <div className="mt-8 p-4 bg-[#161616] border border-gray-800 rounded-lg">
+              <p className="text-xs text-gray-500">Account: {user?.email}</p>
+              <p className="text-xs text-gray-500 mt-1">Member since {new Date(user?._id?.toString().substring(0, 8) ? parseInt(user._id.toString().substring(0, 8), 16) * 1000 : Date.now()).toLocaleDateString()}</p>
             </div>
           </div>
         )}
