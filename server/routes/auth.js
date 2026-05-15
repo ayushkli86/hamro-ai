@@ -10,7 +10,12 @@ const router = express.Router()
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' })
 
 router.post('/signup', async (req, res) => {
-  const { name, email, password } = req.body
+  const name = (req.body.name || '').trim().slice(0, 100)
+  const email = (req.body.email || '').trim().toLowerCase().slice(0, 255)
+  const password = req.body.password || ''
+  if (!name || !email || !password) return res.status(400).json({ message: 'All fields required' })
+  if (!/\S+@\S+\.\S+/.test(email)) return res.status(400).json({ message: 'Invalid email' })
+  if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' })
   const exists = await User.findOne({ email })
   if (exists) return res.status(400).json({ message: 'Email already registered' })
 
@@ -27,7 +32,9 @@ router.post('/signup', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body
+  const email = (req.body.email || '').trim().toLowerCase()
+  const password = req.body.password || ''
+  if (!email || !password) return res.status(400).json({ message: 'Email and password required' })
   const user = await User.findOne({ email })
   if (!user || !(await user.matchPassword(password))) {
     return res.status(401).json({ message: 'Invalid email or password' })

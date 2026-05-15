@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 const sshKeySchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   name: { type: String, required: true },
   publicKey: { type: String, required: true },
   fingerprint: String,

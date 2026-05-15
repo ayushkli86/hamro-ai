@@ -5,7 +5,7 @@ import protect from '../middleware/auth.js'
 const router = express.Router()
 
 router.get('/', protect, async (req, res) => {
-  const keys = await SshKey.find({ user: req.user._id }).sort('-createdAt')
+  const keys = await SshKey.find({ user: req.user._id }).sort('-createdAt').lean().select('name fingerprint createdAt')
   res.json(keys)
 })
 

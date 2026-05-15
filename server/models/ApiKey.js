@@ -6,11 +6,13 @@ function generateKey() {
 }
 
 const apiKeySchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   name: { type: String, required: true },
   key: { type: String, unique: true, default: generateKey },
   lastUsed: Date,
   active: { type: Boolean, default: true },
 }, { timestamps: true })
+
+apiKeySchema.index({ user: 1, active: 1 })
 
 export default mongoose.model('ApiKey', apiKeySchema)

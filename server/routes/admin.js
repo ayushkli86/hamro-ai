@@ -9,17 +9,17 @@ const router = express.Router()
 router.use(protect, adminOnly)
 
 router.get('/users', async (req, res) => {
-  const users = await User.find({}).select('-password')
+  const users = await User.find({}).select('-password').lean()
   res.json(users)
 })
 
 router.get('/orders', async (req, res) => {
-  const orders = await Order.find({}).populate('user', 'name email').sort('-createdAt')
+  const orders = await Order.find({}).populate('user', 'name email').sort('-createdAt').lean()
   res.json(orders)
 })
 
 router.get('/gpus', async (req, res) => {
-  const gpus = await Gpu.find({})
+  const gpus = await Gpu.find({}).lean()
   res.json(gpus)
 })
 

@@ -5,7 +5,7 @@ import protect from '../middleware/auth.js'
 const router = express.Router()
 
 router.get('/', protect, async (req, res) => {
-  const transactions = await Transaction.find({ user: req.user._id }).sort('-createdAt')
+  const transactions = await Transaction.find({ user: req.user._id }).sort('-createdAt').lean().select('type amount description createdAt')
   res.json(transactions)
 })
 
