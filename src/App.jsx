@@ -22,6 +22,7 @@ import Financing from './pages/Financing'
 import Hardware from './pages/Hardware'
 import Careers from './pages/Careers'
 import StartupProgram from './pages/StartupProgram'
+import BlogPost from './pages/BlogPost'
 import Press from './pages/Press'
 import PressKit from './pages/PressKit'
 import Enterprise from './pages/Enterprise'
@@ -789,6 +790,7 @@ export default function App() {
         <Route path="/case-studies" element={<CaseStudies />} />
         <Route path="/about" element={<About />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:id" element={<BlogPost />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/products/:name" element={<ProductPage />} />
