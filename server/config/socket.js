@@ -1,4 +1,6 @@
 import { Server } from 'socket.io'
+import { createAdapter } from '@socket.io/redis-adapter'
+import { createClient } from 'ioredis'
 import Gpu from '../models/Gpu.js'
 import logger from './logger.js'
 
@@ -8,6 +10,15 @@ export function initSocket(server) {
   io = new Server(server, {
     cors: { origin: process.env.FRONTEND_URL || 'http://localhost:5173', methods: ['GET', 'POST'] },
   })
+
+  if (process.env.REDIS_URL) {
+    const pub = createClient(process.env.REDIS_URL)
+    const sub = createClient(process.env.REDIS_URL)
+    io.adapter(createAdapter(pub, sub))
+    logger.info('Socket.io using Redis adapter')
+  } else {
+    logger.warn('REDIS_URL not set — socket.io events limited to single worker')
+  }
 
   io.on('connection', (socket) => {
     logger.info({ socketId: socket.id }, 'WS client connected')
