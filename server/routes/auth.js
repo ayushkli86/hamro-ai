@@ -142,13 +142,17 @@ router.get('/me', authLight, async (req, res) => {
   res.json({ _id: req.user.id, name: req.user.name, email: req.user.email, balance: req.user.balance, emailVerified: req.user.emailVerified })
 })
 
-router.post('/topup', protect, validate(topupSchema), async (req, res) => {
+router.post('/topup', authLight, validate(topupSchema), async (req, res) => {
   const { amount } = req.validated
-  req.user.balance += amount
-  await req.user.save()
-  await Transaction.create({ user: req.user._id, type: 'topup', amount, description: `Added $${amount} to balance` })
-  logger.info({ userId: req.user._id, amount }, 'Balance topped up')
-  res.json({ balance: req.user.balance, message: `$${amount} added to your balance` })
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $inc: { balance: amount } },
+    { new: true, select: 'balance' }
+  )
+  if (!user) return res.status(404).json({ message: 'User not found' })
+  await Transaction.create({ user: req.user.id, type: 'topup', amount, description: `Added $${amount} to balance` })
+  logger.info({ userId: req.user.id, amount }, 'Balance topped up')
+  res.json({ balance: user.balance, message: `$${amount} added to your balance` })
 })
 
 router.post('/refresh', authLight, async (req, res) => {
