@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, sparse: true, unique: true },
   phoneVerified: { type: Boolean, default: false },
   authProvider: { type: String, enum: ['email', 'google', 'apple', 'phone'], default: 'email' },
+  twoFactorSecret: String,
+  twoFactorEnabled: { type: Boolean, default: false },
 }, { timestamps: true })
 
 userSchema.index({ isAdmin: 1, createdAt: -1 })

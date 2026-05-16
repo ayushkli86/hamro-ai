@@ -20,8 +20,12 @@ import subscribeRoutes from './routes/subscribe.js'
 import adminRoutes from './routes/admin.js'
 import paymentRoutes from './routes/payment.js'
 import oauthRoutes from './routes/oauth.js'
+import stripeRoutes from './routes/stripe.js'
+import twofactorRoutes from './routes/twofactor.js'
 import { initSocket } from './config/socket.js'
 import { initPassport } from './config/passport.js'
+import swaggerUi from 'swagger-ui-express'
+import swaggerSpec from './config/swagger.js'
 import Order from './models/Order.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -45,12 +49,52 @@ const authLimiter = rateLimit({
   message: { message: 'Too many attempts, try again later' },
 })
 
+const otpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 1,
+  message: { message: 'Too many OTP requests. Try again in 1 minute.' },
+})
+
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: { message: 'Too many admin requests' },
+})
+
 const app = express()
 initPassport()
 app.use(passport.initialize())
 app.use((req, res, next) => { req.id = uuidv4().slice(0, 8); res.set('X-Request-Id', req.id); next() })
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }))
+
+import { constructWebhookEvent } from './config/stripe.js'
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature']
+  let event
+  try {
+    event = await constructWebhookEvent(req.body, sig)
+  } catch (err) {
+    logger.error({ err: err.message }, 'Stripe webhook error')
+    return res.status(400).send(`Webhook Error: ${err.message}`)
+  }
+  if (event?.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const userId = session.metadata?.userId
+    const amount = parseFloat(session.metadata?.amount || '0')
+    if (userId && amount && session.payment_status === 'paid') {
+      const user = await User.findById(userId)
+      if (user) {
+        user.balance += amount
+        await user.save()
+        await Transaction.create({ user: userId, type: 'topup', amount, description: `Stripe payment`, referenceId: session.id })
+        logger.info({ userId, amount, stripeSessionId: session.id }, 'Payment completed')
+      }
+    }
+  }
+  res.json({ received: true })
+})
+
 app.use(express.json({ limit: '100kb' }))
 app.use((req, res, next) => { res.set('X-RateLimit-Limit', '200'); next() })
 app.use('/api/', limiter)
@@ -67,6 +111,8 @@ app.use('/api/', (req, res, next) => {
   next()
 })
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec))
 app.use('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now(), uptime: process.uptime() }))
 
 if (!isProd) {
@@ -84,9 +130,12 @@ app.use('/api/apikeys', apikeyRoutes)
 app.use('/api/sshkeys', sshkeyRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/subscribe', subscribeRoutes)
-app.use('/api/admin', adminRoutes)
+app.use('/api/admin', adminLimiter, adminRoutes)
 app.use('/api/payment', paymentRoutes)
+app.use('/api/stripe', stripeRoutes)
+app.use('/api/auth/phone/send-otp', otpLimiter)
 app.use('/api/auth', oauthRoutes)
+app.use('/api/auth/2fa', twofactorRoutes)
 
 app.get('/api/seed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })

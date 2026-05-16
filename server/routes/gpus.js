@@ -6,12 +6,50 @@ import { getCached, setCache } from '../config/cache.js'
 
 const router = express.Router()
 
+/**
+ * @openapi
+ * /api/gpus:
+ *   get:
+ *     tags: [GPUs]
+ *     summary: List available GPUs with filters
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *       - in: query
+ *         name: minPrice
+ *         schema: { type: string }
+ *       - in: query
+ *         name: maxPrice
+ *         schema: { type: string }
+ *       - in: query
+ *         name: arch
+ *         schema: { type: string }
+ *       - in: query
+ *         name: minVram
+ *         schema: { type: string }
+ *       - in: query
+ *         name: availability
+ *         schema: { type: string }
+ *       - in: query
+ *         name: sort
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: string, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: string, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated GPU list
+ */
 router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
   const { search, minPrice, maxPrice, arch, minVram, availability, region, sort, page = 1, limit = 20 } = req.query
   const filter = {}
 
   const cacheKey = `gpus:${JSON.stringify(req.query)}`
-  const cached = getCached(cacheKey)
+  const cached = await getCached(cacheKey)
   if (cached) {
     res.set('Cache-Control', 'public, max-age=30, s-maxage=30')
     res.set('X-Cache', 'HIT')
@@ -45,7 +83,7 @@ router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
   ])
 
   const result = { gpus, total, page: parseInt(page), pages: Math.ceil(total / pageSize) }
-  setCache(cacheKey, result, search ? 5000 : 15000)
+  await setCache(cacheKey, result, search ? 5000 : 15000)
 
   res.set('Cache-Control', 'public, max-age=30, s-maxage=30')
   res.set('X-Cache', 'MISS')

@@ -25,6 +25,29 @@ router.get('/', protect, async (req, res) => {
   res.json(orders)
 })
 
+/**
+ * @openapi
+ * /api/orders:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Rent a GPU
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               gpuId: { type: string }
+ *               hours: { type: integer, minimum: 1, maximum: 720 }
+ *     responses:
+ *       201:
+ *         description: Order created
+ *       400:
+ *         description: Insufficient balance or invalid input
+ */
 router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
   const { gpuId, hours } = req.validated
 

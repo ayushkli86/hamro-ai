@@ -1,27 +1,42 @@
 import { useState } from 'react'
-import { authApi } from '../api'
-import { useToast } from '../context/ToastContext'
 import Spinner from './Spinner'
 
+const API = import.meta.env.PROD ? '' : 'http://localhost:5000'
+
+function authHeaders() {
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  return user?.token ? { Authorization: `Bearer ${user.token}` } : {}
+}
+
 export default function PaymentModal({ amount, onClose, onSuccess }) {
-  const toast = useToast()
   const [method, setMethod] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState('select')
 
-  const pay = async () => {
+  const pay = async (paymentMethod) => {
     setProcessing(true)
     setStep('processing')
-    await new Promise((r) => setTimeout(r, 2000))
-    try {
-      const data = await authApi.topup(amount)
-      toast(data.message, 'success')
+    setMethod(paymentMethod)
+
+    if (paymentMethod === 'card') {
+      try {
+        const res = await fetch(`${API}/api/stripe/create-checkout-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ amount }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || 'Payment failed')
+        window.location.href = data.url
+      } catch (err) {
+        setStep('select')
+        setProcessing(false)
+        alert(err.message)
+      }
+    } else {
+      await new Promise((r) => setTimeout(r, 1500))
       setStep('success')
       setTimeout(() => { onSuccess?.(); onClose() }, 1500)
-    } catch (err) {
-      toast(err.message, 'error')
-      setStep('select')
-      setProcessing(false)
     }
   }
 
@@ -36,9 +51,9 @@ export default function PaymentModal({ amount, onClose, onSuccess }) {
               {[
                 { id: 'khalti', label: 'Khalti', color: 'bg-[#4C2B8B]' },
                 { id: 'esewa', label: 'eSewa', color: 'bg-[#60B246]' },
-                { id: 'card', label: 'Credit Card', color: 'bg-blue-600' },
+                { id: 'card', label: 'Credit Card (Stripe)', color: 'bg-blue-600' },
               ].map((m) => (
-                <button key={m.id} onClick={() => { setMethod(m.id); pay() }}
+                <button key={m.id} onClick={() => pay(m.id)}
                   className={`w-full py-3 px-4 rounded-lg text-white font-semibold transition hover:opacity-90 cursor-pointer ${m.color}`}>
                   Pay with {m.label}
                 </button>
@@ -50,7 +65,7 @@ export default function PaymentModal({ amount, onClose, onSuccess }) {
         {step === 'processing' && (
           <div className="text-center py-8">
             <Spinner size={40} />
-            <p className="mt-4 text-sm" style={{ color: 'var(--text-dim)' }}>Processing payment via {method}...</p>
+            <p className="mt-4 text-sm" style={{ color: 'var(--text-dim)' }}>{method === 'card' ? 'Redirecting to Stripe...' : `Processing payment via ${method}...`}</p>
           </div>
         )}
         {step === 'success' && (

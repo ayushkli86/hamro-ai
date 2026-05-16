@@ -13,6 +13,28 @@ const router = express.Router()
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' })
 
+/**
+ * @openapi
+ * /api/auth/signup:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       201:
+ *         description: User created
+ *       400:
+ *         description: Validation error
+ */
 router.post('/signup', validate(signupSchema), async (req, res) => {
   const { name, email, password } = req.validated
   const exists = await User.findOne({ email })
@@ -33,6 +55,27 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
   })
 })
 
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Sign in
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Returns JWT token
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post('/login', validate(loginSchema), async (req, res) => {
   const { email, password } = req.validated
   const user = await User.findOne({ email })

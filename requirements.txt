@@ -1,0 +1,40 @@
+# hamro.ai - GPU Cloud Nepal
+# Node.js v22+ required
+# MongoDB 7+ required (or Docker)
+# Redis 7+ optional (falls back to in-memory cache)
+
+Core runtime:
+  express              HTTP server framework
+  mongoose             MongoDB ODM
+  jsonwebtoken         JWT authentication
+  bcryptjs             Password hashing
+  passport + strategies  OAuth (Google, Apple)
+  stripe               Payment processing
+  pino                 Structured logging
+  zod                  Input validation
+  socket.io            WebSocket real-time updates
+  ioredis              Redis client (optional)
+  otplib               TOTP 2FA
+  nodemailer           Email delivery
+  swagger-jsdoc + swagger-ui-express  API docs
+  helmet + cors + compression  Security/middleware
+  express-rate-limit   Rate limiting
+
+Frontend:
+  react + react-dom + react-router-dom
+  socket.io-client
+  tailwindcss
+
+Dev:
+  vite + vitest        Build and test
+  eslint               Linting
+  supertest            HTTP test assertions
+
+Environment (.env):
+  MONGO_URI, JWT_SECRET, FRONTEND_URL
+  GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+  APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY
+  AAKASH_SMS_TOKEN (phone OTP)
+  STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+  REDIS_URL (optional)
