@@ -5,6 +5,7 @@ import Order from '../models/Order.js'
 import Gpu from '../models/Gpu.js'
 import User from '../models/User.js'
 import protect from '../middleware/auth.js'
+import authLight from '../middleware/authLight.js'
 import { validate } from '../middleware/validate.js'
 import { orderCreateSchema, instanceActionSchema } from '../config/schemas.js'
 import { sendEmail } from '../config/email.js'
@@ -14,9 +15,9 @@ import { renderInvoice } from '../config/invoice.js'
 
 const router = express.Router()
 
-router.get('/', protect, async (req, res) => {
+router.get('/', authLight, async (req, res) => {
   const { status, search, sort } = req.query
-  const filter = { user: req.user._id }
+  const filter = { user: req.user.id }
   if (status && ['active', 'completed', 'cancelled'].includes(status)) filter.status = status
   if (search) filter.gpuName = { $regex: search, $options: 'i' }
 
@@ -48,7 +49,7 @@ router.get('/', protect, async (req, res) => {
  *       400:
  *         description: Insufficient balance or invalid input
  */
-router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
+router.post('/', authLight, validate(orderCreateSchema), async (req, res) => {
   const { gpuId, hours } = req.validated
 
   const session = await mongoose.startSession()
@@ -59,7 +60,7 @@ router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
     if (!gpu) { await session.abortTransaction(); return res.status(404).json({ message: 'GPU not found' }) }
 
     const cost = gpu.price * hours
-    const user = await User.findById(req.user._id).session(session)
+    const user = await User.findById(req.user.id).session(session)
     if (user.balance < cost) { await session.abortTransaction(); return res.status(400).json({ message: 'Insufficient balance' }) }
     if (gpu.inStock < 1) { await session.abortTransaction(); return res.status(400).json({ message: 'No stock available' }) }
 
@@ -70,7 +71,7 @@ router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
 
     const sshNum = Math.floor(Math.random() * 9000) + 1000
     const [order] = await Order.create([{
-      user: req.user._id, gpu: gpuId, gpuName: gpu.name,
+      user: req.user.id, gpu: gpuId, gpuName: gpu.name,
       hours, cost, region: 'nepal',
       expiresAt: new Date(Date.now() + hours * 3600000),
       sshHost: `compute${sshNum}.hamro.ai`,
@@ -79,7 +80,7 @@ router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
       jupyterUrl: `https://compute${sshNum}.hamro.ai:8888`,
     }], { session })
 
-    await Transaction.create([{ user: req.user._id, type: 'rental', amount: -cost, description: `${gpu.name} — ${hours} hrs`, referenceId: order._id.toString() }], { session })
+    await Transaction.create([{ user: req.user.id, type: 'rental', amount: -cost, description: `${gpu.name} — ${hours} hrs`, referenceId: order._id.toString() }], { session })
 
     await session.commitTransaction()
 
@@ -89,7 +90,7 @@ router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
       html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard">View in Dashboard →</a></p>`,
     })
 
-    logger.info({ userId: req.user._id, orderId: order._id, gpu: gpu.name, hours, cost }, 'Order created')
+    logger.info({ userId: req.user.id, orderId: order._id, gpu: gpu.name, hours, cost }, 'Order created')
     res.status(201).json(order)
   } catch (err) {
     await session.abortTransaction()
@@ -99,17 +100,17 @@ router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
   }
 })
 
-router.patch('/:id/cancel', protect, async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+router.patch('/:id/cancel', authLight, async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.id, user: req.user.id })
   if (!order) return res.status(404).json({ message: 'Order not found' })
   order.status = 'cancelled'
   await order.save()
   res.json(order)
 })
 
-router.patch('/:id/instance', protect, validate(instanceActionSchema), async (req, res) => {
+router.patch('/:id/instance', authLight, validate(instanceActionSchema), async (req, res) => {
   const { action } = req.validated
-  const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+  const order = await Order.findOne({ _id: req.params.id, user: req.user.id })
   if (!order) return res.status(404).json({ message: 'Order not found' })
   const actions = { start: 'running', stop: 'stopped', terminate: 'terminated' }
   order.instanceStatus = actions[action]

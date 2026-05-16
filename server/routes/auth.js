@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import User from '../models/User.js'
 import protect from '../middleware/auth.js'
+import authLight from '../middleware/authLight.js'
 import { validate } from '../middleware/validate.js'
 import { signupSchema, loginSchema, topupSchema, passwordChangeSchema } from '../config/schemas.js'
 import { sendEmail } from '../config/email.js'
@@ -11,7 +12,11 @@ import logger from '../config/logger.js'
 
 const router = express.Router()
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+const generateToken = (user) => jwt.sign(
+  { id: user._id || user.id, name: user.name, email: user.email, balance: user.balance, isAdmin: user.isAdmin || false, emailVerified: user.emailVerified || false },
+  process.env.JWT_SECRET,
+  { expiresIn: '30d' }
+)
 
 /**
  * @openapi
@@ -51,7 +56,7 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
   logger.info({ userId: user._id }, 'User signed up')
   res.status(201).json({
     _id: user._id, name: user.name, email: user.email, balance: user.balance,
-    token: generateToken(user._id),
+    token: generateToken(user),
   })
 })
 
@@ -90,7 +95,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   logger.info({ userId: user._id }, 'User logged in')
   res.json({
     _id: user._id, name: user.name, email: user.email, balance: user.balance,
-    token: generateToken(user._id),
+    token: generateToken(user),
   })
 })
 
@@ -133,8 +138,8 @@ router.post('/reset-password', async (req, res) => {
   res.json({ message: 'Password reset successful' })
 })
 
-router.get('/me', protect, async (req, res) => {
-  res.json({ _id: req.user._id, name: req.user.name, email: req.user.email, balance: req.user.balance, emailVerified: req.user.emailVerified })
+router.get('/me', authLight, async (req, res) => {
+  res.json({ _id: req.user.id, name: req.user.name, email: req.user.email, balance: req.user.balance, emailVerified: req.user.emailVerified })
 })
 
 router.post('/topup', protect, validate(topupSchema), async (req, res) => {
@@ -146,8 +151,8 @@ router.post('/topup', protect, validate(topupSchema), async (req, res) => {
   res.json({ balance: req.user.balance, message: `$${amount} added to your balance` })
 })
 
-router.post('/refresh', protect, async (req, res) => {
-  const token = generateToken(req.user._id)
+router.post('/refresh', authLight, async (req, res) => {
+  const token = generateToken(req.user)
   res.json({ token })
 })
 

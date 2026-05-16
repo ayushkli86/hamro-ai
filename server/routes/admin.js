@@ -1,5 +1,6 @@
 import express from 'express'
 import protect from '../middleware/auth.js'
+import authLight from '../middleware/authLight.js'
 import adminOnly from '../middleware/admin.js'
 import { validate } from '../middleware/validate.js'
 import { gpuCreateSchema } from '../config/schemas.js'
@@ -8,7 +9,7 @@ import User from '../models/User.js'
 import Order from '../models/Order.js'
 
 const router = express.Router()
-router.use(protect, adminOnly)
+router.use(authLight, adminOnly)
 
 router.get('/users', async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1)
