@@ -7,11 +7,27 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || 'null'))
   const [loading, setLoading] = useState(true)
 
+  const setAuth = (data) => {
+    localStorage.setItem('user', JSON.stringify(data))
+    setUser(data)
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const userId = params.get('userId')
+    const name = params.get('name')
+    const email = params.get('email')
+    if (token && userId) {
+      setAuth({ token, _id: userId, name, email })
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
+
   useEffect(() => {
     if (user?.token) {
       authApi.me().then((u) => {
-        setUser((prev) => ({ ...prev, ...u }))
-        localStorage.setItem('user', JSON.stringify({ ...user, ...u }))
+        setAuth({ ...user, ...u })
       }).catch(() => logout())
         .finally(() => setLoading(false))
     } else {
@@ -21,21 +37,23 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await authApi.login({ email, password })
-    localStorage.setItem('user', JSON.stringify(data))
-    setUser(data)
+    setAuth(data)
   }
 
   const signup = async (name, email, password) => {
     const data = await authApi.signup({ name, email, password })
-    localStorage.setItem('user', JSON.stringify(data))
-    setUser(data)
+    setAuth(data)
+  }
+
+  const phoneLogin = async (phone, code) => {
+    const data = await authApi.verifyOtp(phone, code)
+    setAuth(data)
   }
 
   const refreshUser = async () => {
     try {
       const u = await authApi.me()
-      setUser((prev) => ({ ...prev, ...u }))
-      localStorage.setItem('user', JSON.stringify({ ...user, ...u }))
+      setAuth({ ...user, ...u })
     } catch {}
   }
 
@@ -45,7 +63,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, phoneLogin, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

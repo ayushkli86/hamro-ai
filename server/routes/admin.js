@@ -1,6 +1,8 @@
 import express from 'express'
 import protect from '../middleware/auth.js'
 import adminOnly from '../middleware/admin.js'
+import { validate } from '../middleware/validate.js'
+import { gpuCreateSchema } from '../config/schemas.js'
 import Gpu from '../models/Gpu.js'
 import User from '../models/User.js'
 import Order from '../models/Order.js'
@@ -9,13 +11,23 @@ const router = express.Router()
 router.use(protect, adminOnly)
 
 router.get('/users', async (req, res) => {
-  const users = await User.find({}).select('-password').lean()
-  res.json(users)
+  const page = Math.max(1, parseInt(req.query.page) || 1)
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50))
+  const [users, total] = await Promise.all([
+    User.find({}).select('-password').sort('-createdAt').skip((page - 1) * limit).limit(limit).lean(),
+    User.countDocuments({}),
+  ])
+  res.json({ users, total, page, pages: Math.ceil(total / limit) })
 })
 
 router.get('/orders', async (req, res) => {
-  const orders = await Order.find({}).populate('user', 'name email').sort('-createdAt').lean()
-  res.json(orders)
+  const page = Math.max(1, parseInt(req.query.page) || 1)
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50))
+  const [orders, total] = await Promise.all([
+    Order.find({}).populate('user', 'name email').sort('-createdAt').skip((page - 1) * limit).limit(limit).lean(),
+    Order.countDocuments({}),
+  ])
+  res.json({ orders, total, page, pages: Math.ceil(total / limit) })
 })
 
 router.get('/gpus', async (req, res) => {
@@ -23,8 +35,8 @@ router.get('/gpus', async (req, res) => {
   res.json(gpus)
 })
 
-router.post('/gpus', async (req, res) => {
-  const gpu = await Gpu.create(req.body)
+router.post('/gpus', validate(gpuCreateSchema), async (req, res) => {
+  const gpu = await Gpu.create(req.validated)
   res.status(201).json(gpu)
 })
 

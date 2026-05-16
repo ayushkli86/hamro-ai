@@ -3,11 +3,13 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
+import passport from 'passport'
 import { v4 as uuidv4 } from 'uuid'
 import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import connectDB from './config/db.js'
+import logger from './config/logger.js'
 import authRoutes from './routes/auth.js'
 import gpuRoutes from './routes/gpus.js'
 import orderRoutes from './routes/orders.js'
@@ -16,10 +18,19 @@ import sshkeyRoutes from './routes/sshkeys.js'
 import transactionRoutes from './routes/transactions.js'
 import subscribeRoutes from './routes/subscribe.js'
 import adminRoutes from './routes/admin.js'
+import paymentRoutes from './routes/payment.js'
+import oauthRoutes from './routes/oauth.js'
 import { initSocket } from './config/socket.js'
+import { initPassport } from './config/passport.js'
+import Order from './models/Order.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
+
+if (!process.env.JWT_SECRET) {
+  logger.fatal('JWT_SECRET is not set')
+  process.exit(1)
+}
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -35,10 +46,11 @@ const authLimiter = rateLimit({
 })
 
 const app = express()
-app.use(compression())
+initPassport()
+app.use(passport.initialize())
 app.use((req, res, next) => { req.id = uuidv4().slice(0, 8); res.set('X-Request-Id', req.id); next() })
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
-app.use(cors())
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }))
 app.use(express.json({ limit: '100kb' }))
 app.use((req, res, next) => { res.set('X-RateLimit-Limit', '200'); next() })
 app.use('/api/', limiter)
@@ -60,7 +72,7 @@ app.use('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now(), 
 if (!isProd) {
   app.use('/api/', (req, res, next) => {
     const start = Date.now()
-    res.on('finish', () => console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`))
+    res.on('finish', () => logger.info({ method: req.method, url: req.originalUrl, status: res.statusCode, duration: `${Date.now() - start}ms` }))
     next()
   })
 }
@@ -73,6 +85,8 @@ app.use('/api/sshkeys', sshkeyRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/subscribe', subscribeRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/payment', paymentRoutes)
+app.use('/api/auth', oauthRoutes)
 
 app.get('/api/seed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })
@@ -98,7 +112,7 @@ app.get('/api/seed', async (req, res) => {
 app.use('/api/*', (req, res) => res.status(404).json({ message: 'API route not found' }))
 
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message)
+  logger.error({ err: err.message, stack: isProd ? undefined : err.stack })
   res.status(500).json({ message: isProd ? 'Internal server error' : err.message })
 })
 
@@ -112,13 +126,23 @@ if (isProd) {
 
 const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => {
-  console.log(`hamro.ai server running on port ${PORT}`)
-  console.log(`Mode: ${isProd ? 'production' : 'development'}`)
-  if (isProd) console.log(`Serving frontend from: ${path.join(__dirname, '..', 'dist')}`)
+  logger.info({ port: PORT, mode: isProd ? 'production' : 'development' }, 'Server started')
 })
 
 initSocket(server)
 connectDB()
 
-process.on('SIGTERM', () => { console.log('SIGTERM received. Shutting down...'); server.close(() => process.exit(0)) })
-process.on('SIGINT', () => { console.log('SIGINT received. Shutting down...'); server.close(() => process.exit(0)) })
+setInterval(async () => {
+  try {
+    const expired = await Order.updateMany(
+      { status: 'active', expiresAt: { $lt: new Date() } },
+      { $set: { status: 'completed', instanceStatus: 'terminated' } }
+    )
+    if (expired.modifiedCount > 0) logger.info({ count: expired.modifiedCount }, 'Auto-terminated expired orders')
+  } catch (err) {
+    logger.error({ err: err.message }, 'Order expiry check failed')
+  }
+}, 60000)
+
+process.on('SIGTERM', () => { logger.info('SIGTERM received. Shutting down...'); server.close(() => process.exit(0)) })
+process.on('SIGINT', () => { logger.info('SIGINT received. Shutting down...'); server.close(() => process.exit(0)) })

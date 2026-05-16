@@ -1,29 +1,37 @@
 import { Server } from 'socket.io'
+import Gpu from '../models/Gpu.js'
+import logger from './logger.js'
 
 let io
 
 export function initSocket(server) {
   io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { origin: process.env.FRONTEND_URL || 'http://localhost:5173', methods: ['GET', 'POST'] },
   })
 
   io.on('connection', (socket) => {
-    console.log('WS client connected:', socket.id)
-    socket.on('disconnect', () => console.log('WS client disconnected:', socket.id))
+    logger.info({ socketId: socket.id }, 'WS client connected')
+    socket.on('disconnect', () => logger.info({ socketId: socket.id }, 'WS client disconnected'))
   })
 
   startPriceSimulator()
   return io
 }
 
-function startPriceSimulator() {
-  setInterval(() => {
-    const gpus = ['RTX PRO 6000 S', 'RTX 4090', 'H100', 'A100', 'RTX 5090']
-    const gpu = gpus[Math.floor(Math.random() * gpus.length)]
-    const change = (Math.random() * 0.2 - 0.1)
-    const direction = change >= 0 ? 'up' : 'down'
-    io.emit('priceUpdate', { name: gpu, change: Math.abs(change), direction })
-  }, 4000)
+async function startPriceSimulator() {
+  const simulate = async () => {
+    try {
+      const gpus = await Gpu.find({}).select('name price').lean()
+      if (gpus.length === 0) return
+      const gpu = gpus[Math.floor(Math.random() * gpus.length)]
+      const change = (Math.random() * 0.2 - 0.1)
+      const direction = change >= 0 ? 'up' : 'down'
+      io.emit('priceUpdate', { name: gpu.name, change: Math.abs(change), direction })
+    } catch (err) {
+      logger.error({ err: err.message }, 'Price simulator error')
+    }
+  }
+  setInterval(simulate, 4000)
 }
 
 export function getIO() {

@@ -5,8 +5,12 @@ import Order from '../models/Order.js'
 import Gpu from '../models/Gpu.js'
 import User from '../models/User.js'
 import protect from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { orderCreateSchema, instanceActionSchema } from '../config/schemas.js'
 import { sendEmail } from '../config/email.js'
 import Transaction from '../models/Transaction.js'
+import logger from '../config/logger.js'
+import { renderInvoice } from '../config/invoice.js'
 
 const router = express.Router()
 
@@ -21,10 +25,8 @@ router.get('/', protect, async (req, res) => {
   res.json(orders)
 })
 
-router.post('/', protect, async (req, res) => {
-  const { gpuId, hours } = req.body
-  if (!gpuId || !hours || hours < 1) return res.status(400).json({ message: 'Invalid request' })
-  if (hours > 720) return res.status(400).json({ message: 'Maximum 720 hours (30 days)' })
+router.post('/', protect, validate(orderCreateSchema), async (req, res) => {
+  const { gpuId, hours } = req.validated
 
   const session = await mongoose.startSession()
   session.startTransaction()
@@ -47,6 +49,7 @@ router.post('/', protect, async (req, res) => {
     const [order] = await Order.create([{
       user: req.user._id, gpu: gpuId, gpuName: gpu.name,
       hours, cost, region: 'nepal',
+      expiresAt: new Date(Date.now() + hours * 3600000),
       sshHost: `compute${sshNum}.hamro.ai`,
       sshPort: 22 + Math.floor(Math.random() * 1000),
       sshUser: 'root',
@@ -60,9 +63,10 @@ router.post('/', protect, async (req, res) => {
     sendEmail({
       to: user.email,
       subject: `Order Confirmed — ${gpu.name}`,
-      html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard">View in Dashboard →</a></p>`,
+      html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard">View in Dashboard →</a></p>`,
     })
 
+    logger.info({ userId: req.user._id, orderId: order._id, gpu: gpu.name, hours, cost }, 'Order created')
     res.status(201).json(order)
   } catch (err) {
     await session.abortTransaction()
@@ -80,14 +84,14 @@ router.patch('/:id/cancel', protect, async (req, res) => {
   res.json(order)
 })
 
-router.patch('/:id/instance', protect, async (req, res) => {
-  const { action } = req.body
+router.patch('/:id/instance', protect, validate(instanceActionSchema), async (req, res) => {
+  const { action } = req.validated
   const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
   if (!order) return res.status(404).json({ message: 'Order not found' })
   const actions = { start: 'running', stop: 'stopped', terminate: 'terminated' }
-  if (!actions[action]) return res.status(400).json({ message: 'Invalid action' })
   order.instanceStatus = actions[action]
   await order.save()
+  logger.info({ orderId: order._id, action }, 'Instance action')
   res.json(order)
 })
 
@@ -104,41 +108,7 @@ router.get('/:id/invoice', async (req, res) => {
   const order = await Order.findOne({ _id: req.params.id, user: userId }).populate('user', 'name email')
   if (!order) return res.status(404).json({ message: 'Order not found' })
 
-  const total = order.cost
-  const tax = total * 0.13
-  const grandTotal = total + tax
-
-  res.send(`
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>Invoice — hamro.ai</title>
-<style>
-  body { font-family: 'Courier New', monospace; max-width: 600px; margin: 40px auto; padding: 20px; color: #333; }
-  .header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 20px; margin-bottom: 20px; }
-  .header h1 { margin: 0; font-size: 24px; }
-  .header p { margin: 4px 0; color: #666; }
-  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-  .total { font-size: 18px; font-weight: bold; margin-top: 16px; padding-top: 16px; border-top: 2px solid #333; }
-  .footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
-  @media print { body { margin: 0; } .no-print { display: none; } }
-</style></head>
-<body>
-  <div class="header">
-    <h1>hamro.ai</h1>
-    <p>GPU Cloud • Nepal</p>
-    <p>Invoice #${order._id.toString().slice(-8).toUpperCase()}</p>
-  </div>
-  <p><strong>Customer:</strong> ${order.user?.name || 'N/A'} (${order.user?.email || 'N/A'})</p>
-  <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-  <p><strong>Region:</strong> ${order.region}</p>
-  <br>
-  <div class="row"><span>${order.gpuName} × ${order.hours}h @ $${(order.cost / order.hours).toFixed(2)}/hr</span><span>$${total.toFixed(2)}</span></div>
-  <div class="row"><span>Status</span><span>${order.status.toUpperCase()}</span></div>
-  <div class="row"><span>Tax (13%)</span><span>$${tax.toFixed(2)}</span></div>
-  <div class="row total"><span>Grand Total</span><span>$${grandTotal.toFixed(2)}</span></div>
-  <div class="footer"><p>Thank you for using hamro.ai</p><button class="no-print" onclick="window.print()" style="margin-top:12px;padding:8px 20px;cursor:pointer;">Print / Save PDF</button></div>
-</body></html>
-  `)
+  res.send(renderInvoice(order))
 })
 
 export default router

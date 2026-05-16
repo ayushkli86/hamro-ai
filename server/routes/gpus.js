@@ -1,10 +1,12 @@
 import express from 'express'
 import Gpu from '../models/Gpu.js'
-import { getCached, setCache, clearCache } from '../config/cache.js'
+import { validateQuery } from '../middleware/validate.js'
+import { gpuQuerySchema } from '../config/schemas.js'
+import { getCached, setCache } from '../config/cache.js'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
   const { search, minPrice, maxPrice, arch, minVram, availability, region, sort, page = 1, limit = 20 } = req.query
   const filter = {}
 

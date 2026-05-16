@@ -13,6 +13,7 @@ const orderSchema = new mongoose.Schema({
   sshPort: { type: Number, default: 22 },
   sshUser: { type: String, default: 'root' },
   jupyterUrl: { type: String, default: '' },
+  expiresAt: { type: Date, index: true },
 }, { timestamps: true })
 
 orderSchema.index({ user: 1, status: 1, createdAt: -1 })

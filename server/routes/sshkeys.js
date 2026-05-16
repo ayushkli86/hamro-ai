@@ -1,6 +1,8 @@
 import express from 'express'
 import SshKey from '../models/SshKey.js'
 import protect from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { sshKeySchema } from '../config/schemas.js'
 
 const router = express.Router()
 
@@ -9,9 +11,8 @@ router.get('/', protect, async (req, res) => {
   res.json(keys)
 })
 
-router.post('/', protect, async (req, res) => {
-  const { name, publicKey } = req.body
-  if (!name || !publicKey) return res.status(400).json({ message: 'Name and public key are required' })
+router.post('/', protect, validate(sshKeySchema), async (req, res) => {
+  const { name, publicKey } = req.validated
   const key = await SshKey.create({ user: req.user._id, name, publicKey })
   res.status(201).json(key)
 })

@@ -21,6 +21,9 @@ export const authApi = {
   me: () => request('/auth/me'),
   topup: (amount) => request('/auth/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
   changePassword: (currentPassword, newPassword) => request('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
+  sendOtp: (phone) => request('/auth/phone/send-otp', { method: 'POST', body: JSON.stringify({ phone }) }),
+  verifyOtp: (phone, code) => request('/auth/phone/verify-otp', { method: 'POST', body: JSON.stringify({ phone, code }) }),
+  refresh: () => request('/auth/refresh', { method: 'POST' }),
 }
 
 export const gpuApi = {
