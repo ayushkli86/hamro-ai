@@ -119,7 +119,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.get('/api-docs.json', (req, res) => res.json(swaggerSpec))
 app.use('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now(), uptime: process.uptime() }))
 
-if (!isProd) {
+if (!isProd && !isLoadTest) {
   app.use('/api/', (req, res, next) => {
     const start = Date.now()
     res.on('finish', () => logger.info({ method: req.method, url: req.originalUrl, status: res.statusCode, duration: `${Date.now() - start}ms` }))
