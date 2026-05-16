@@ -7,8 +7,10 @@ import logger from './logger.js'
 let io
 
 export function initSocket(server) {
+  const isCpanel = process.env.CPANEL === 'true'
   io = new Server(server, {
-    cors: { origin: process.env.FRONTEND_URL || 'http://localhost:5173', methods: ['GET', 'POST'] },
+    cors: { origin: process.env.FRONTEND_URL || (isCpanel ? '*' : 'http://localhost:5173'), methods: ['GET', 'POST'] },
+    transports: isCpanel ? ['polling'] : ['websocket', 'polling'],
   })
 
   if (process.env.REDIS_URL) {
