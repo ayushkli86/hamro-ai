@@ -1,5 +1,6 @@
 import express from 'express'
 import Gpu from '../models/Gpu.js'
+import ProviderGpu from '../models/ProviderGpu.js'
 import { validateQuery } from '../middleware/validate.js'
 import { gpuQuerySchema } from '../config/schemas.js'
 import { getCached, setCache } from '../config/cache.js'
@@ -92,7 +93,25 @@ router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
     Gpu.countDocuments(filter),
   ])
 
-  const result = { gpus, total, page: parseInt(page), pages: Math.ceil(total / pageSize) }
+  const providerFilter = { isOnline: true, isAvailable: true }
+  if (search) providerFilter.gpuName = { $regex: search, $options: 'i' }
+  if (minVram) providerFilter.gpuMemory = { $gte: parseInt(minVram) }
+  const providerGpus = await ProviderGpu.find(providerFilter)
+    .sort({ pricePerHour: 1 }).limit(20).lean()
+
+  const providerMapped = providerGpus.map(g => ({
+    _id: g._id,
+    name: g.gpuName,
+    vram: `${g.gpuMemory}GB`,
+    vramGB: g.gpuMemory,
+    price: g.pricePerHour,
+    provider: g.user,
+    source: 'provider',
+    isOnline: g.isOnline,
+    region: g.region,
+  }))
+
+  const result = { gpus, providerGpus: providerMapped, total, page: parseInt(page), pages: Math.ceil(total / pageSize) }
   await setCache(cacheKey, result, search ? 5000 : 15000)
 
   res.set('Cache-Control', 'public, max-age=30, s-maxage=30')

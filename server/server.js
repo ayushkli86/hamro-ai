@@ -25,6 +25,9 @@ import paymentRoutes from './routes/payment.js'
 import oauthRoutes from './routes/oauth.js'
 import stripeRoutes from './routes/stripe.js'
 import twofactorRoutes from './routes/twofactor.js'
+import providerRoutes from './routes/provider.js'
+import agentRoutes from './routes/agent.js'
+import jobRoutes from './routes/jobs.js'
 import { initSocket } from './config/socket.js'
 import { initPassport } from './config/passport.js'
 import swaggerUi from 'swagger-ui-express'
@@ -185,6 +188,9 @@ app.use('/api/stripe', stripeRoutes)
 app.use('/api/auth/phone/send-otp', otpLimiter)
 app.use('/api/auth', oauthRoutes)
 app.use('/api/auth/2fa', twofactorRoutes)
+app.use('/api/provider', providerRoutes)
+app.use('/api/agent', agentRoutes)
+app.use('/api/jobs', jobRoutes)
 
 app.get('/api/seed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })
