@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
@@ -85,6 +85,7 @@ function Navbar() {
   const [openDropdown, setOpenDropdown] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState(null)
+  const closeTimerRef = useRef(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -98,11 +99,16 @@ function Navbar() {
         <div className="flex items-center justify-between transition-all duration-300 h-[75px]">
           <div className="flex items-center gap-[30px]">
             <Link to="/"><img alt="hamro.ai" title="hamro.ai" width="114" height="30" src="./vast_logo.svg" /></Link>
-            <ul className="hidden xl:flex items-center gap-[28px] 2xl:gap-[32px] list-none m-0 p-0 mt-[7px]"
-              onMouseLeave={() => setOpenDropdown(null)}>
+            <ul className="hidden xl:flex items-center gap-[28px] 2xl:gap-[32px] list-none m-0 p-0 mt-[7px]">
               {NAV_ITEMS.map((item) => (
                 <li key={item.label} className="relative"
-                  onMouseEnter={() => setOpenDropdown(item.label)}
+                  onMouseEnter={() => {
+                    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+                    setOpenDropdown(item.label)
+                  }}
+                  onMouseLeave={() => {
+                    closeTimerRef.current = setTimeout(() => setOpenDropdown(null), 150)
+                  }}
                 >
                   <Link to={NAV_LINKS[item.label] || '/'} className="font-heading font-semibold text-[15px] xl:text-[17px] transition-colors duration-150 text-[#d4d4d4] hover:text-white no-underline flex items-center gap-1"
                     onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}>
@@ -110,7 +116,13 @@ function Navbar() {
                     <span style={{ display: 'inline-block', width: '20px', height: '20px', WebkitMaskImage: 'url(/icons/chevron-down.svg)', maskImage: 'url(/icons/chevron-down.svg)', backgroundColor: '#595959', WebkitMaskSize: 'contain', maskSize: 'contain' }} />
                   </Link>
                   {openDropdown === item.label && (
-                    <div className="absolute left-0 mt-2 bg-[#242424] rounded-md shadow-lg py-2 min-w-[180px] z-50 border border-[#333]">
+                    <div className="absolute left-0 top-full pt-2 bg-[#242424] rounded-md shadow-lg py-2 min-w-[180px] z-50 border border-[#333]"
+                      onMouseEnter={() => {
+                        if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+                      }}
+                      onMouseLeave={() => {
+                        closeTimerRef.current = setTimeout(() => setOpenDropdown(null), 150)
+                      }}>
                       {item.items.map((sub) => (
                         <Link key={sub} to={ITEM_LINKS[sub] || '/'} className="block px-4 py-2 text-[15px] font-heading font-medium text-[#d4d4d4] hover:text-white no-underline whitespace-nowrap transition-colors duration-150">
                           {sub}

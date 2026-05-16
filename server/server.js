@@ -74,21 +74,6 @@ app.use('/api/transactions', transactionRoutes)
 app.use('/api/subscribe', subscribeRoutes)
 app.use('/api/admin', adminRoutes)
 
-app.use('/api/*', (req, res) => res.status(404).json({ message: 'API route not found' }))
-
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message)
-  res.status(500).json({ message: isProd ? 'Internal server error' : err.message })
-})
-
-if (isProd) {
-  app.use(express.static(path.join(__dirname, '..', 'dist')))
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) return res.status(404).json({ message: 'API route not found' })
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
-  })
-}
-
 app.get('/api/seed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })
   const { default: Gpu } = await import('./models/Gpu.js')
@@ -109,6 +94,21 @@ app.get('/api/seed', async (req, res) => {
   }
   res.json({ message: 'Seeded 7 GPUs + admin user' })
 })
+
+app.use('/api/*', (req, res) => res.status(404).json({ message: 'API route not found' }))
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.message)
+  res.status(500).json({ message: isProd ? 'Internal server error' : err.message })
+})
+
+if (isProd) {
+  app.use(express.static(path.join(__dirname, '..', 'dist')))
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) return res.status(404).json({ message: 'API route not found' })
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
+  })
+}
 
 const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => {
