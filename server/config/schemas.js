@@ -21,21 +21,21 @@ export const passwordChangeSchema = z.object({
 })
 
 export const orderCreateSchema = z.object({
-  gpuId: z.string().min(1),
+  gpuId: z.string().trim().min(1),
   hours: z.number().int().min(1, 'Minimum 1 hour').max(720, 'Maximum 720 hours'),
 })
 
 export const gpuQuerySchema = z.object({
-  search: z.string().optional(),
-  minPrice: z.string().optional(),
-  maxPrice: z.string().optional(),
-  arch: z.string().optional(),
-  minVram: z.string().optional(),
-  availability: z.string().optional(),
-  region: z.string().optional(),
-  sort: z.string().optional(),
-  page: z.string().optional(),
-  limit: z.string().optional(),
+  search: z.string().trim().optional(),
+  minPrice: z.string().trim().optional(),
+  maxPrice: z.string().trim().optional(),
+  arch: z.string().trim().optional(),
+  minVram: z.string().trim().optional(),
+  availability: z.string().trim().optional(),
+  region: z.string().trim().optional(),
+  sort: z.string().trim().optional(),
+  page: z.string().trim().optional(),
+  limit: z.string().trim().optional(),
 })
 
 export const apiKeySchema = z.object({
@@ -60,19 +60,19 @@ export const instanceActionSchema = z.object({
 })
 
 export const gpuCreateSchema = z.object({
-  name: z.string().min(1),
-  arch: z.string().optional(),
-  vram: z.string().optional(),
+  name: z.string().trim().min(1),
+  arch: z.string().trim().optional(),
+  vram: z.string().trim().optional(),
   vramGB: z.number().optional(),
   price: z.number().positive(),
   rangeLow: z.number().optional(),
   rangeHigh: z.number().optional(),
   availability: z.enum(['Low', 'Med', 'High']).optional(),
-  region: z.string().optional(),
+  region: z.string().trim().optional(),
   inStock: z.number().int().optional(),
-  bandwidth: z.string().optional(),
-  cpu: z.string().optional(),
-  ram: z.string().optional(),
-  disk: z.string().optional(),
-  description: z.string().optional(),
+  bandwidth: z.string().trim().optional(),
+  cpu: z.string().trim().optional(),
+  ram: z.string().trim().optional(),
+  disk: z.string().trim().optional(),
+  description: z.string().trim().optional(),
 })

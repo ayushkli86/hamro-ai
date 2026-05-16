@@ -6,9 +6,12 @@ import compression from 'compression'
 import passport from 'passport'
 import { v4 as uuidv4 } from 'uuid'
 import rateLimit from 'express-rate-limit'
+import RedisStore from 'rate-limit-redis'
+import { createClient } from 'ioredis'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import connectDB from './config/db.js'
+import mongoose from 'mongoose'
 import logger from './config/logger.js'
 import authRoutes from './routes/auth.js'
 import gpuRoutes from './routes/gpus.js'
@@ -39,29 +42,37 @@ if (!process.env.JWT_SECRET) {
 const isLoadTest = process.env.LOAD_TEST === 'true'
 const LOAD_MAX = 9_999_999
 
+const rateLimitStore = process.env.REDIS_URL
+  ? new RedisStore({ client: createClient(process.env.REDIS_URL), prefix: 'rl:' })
+  : undefined
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isLoadTest ? LOAD_MAX : 200,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rateLimitStore,
 })
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isLoadTest ? LOAD_MAX : 10,
   message: { message: 'Too many attempts, try again later' },
+  store: rateLimitStore,
 })
 
 const otpLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isLoadTest ? LOAD_MAX : 1,
   message: { message: 'Too many OTP requests. Try again in 1 minute.' },
+  store: rateLimitStore,
 })
 
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isLoadTest ? LOAD_MAX : 50,
   message: { message: 'Too many admin requests' },
+  store: rateLimitStore,
 })
 
 const app = express()
@@ -69,7 +80,21 @@ export { app }
 initPassport()
 app.use(passport.initialize())
 app.use((req, res, next) => { req.id = uuidv4().slice(0, 8); res.set('X-Request-Id', req.id); next() })
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}))
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }))
 
 import { constructWebhookEvent } from './config/stripe.js'
@@ -117,7 +142,27 @@ app.use('/api/', (req, res, next) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.get('/api-docs.json', (req, res) => res.json(swaggerSpec))
-app.use('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now(), uptime: process.uptime() }))
+app.use('/api/health', async (req, res) => {
+  const checks = { status: 'ok', time: Date.now(), uptime: process.uptime() }
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping()
+      checks.mongo = 'connected'
+    } else {
+      checks.mongo = 'disconnected'
+      checks.status = 'degraded'
+    }
+  } catch { checks.mongo = 'error'; checks.status = 'degraded' }
+  if (process.env.REDIS_URL) {
+    try {
+      const redis = createClient(process.env.REDIS_URL)
+      await redis.ping()
+      checks.redis = 'connected'
+      redis.disconnect()
+    } catch { checks.redis = 'error'; checks.status = 'degraded' }
+  }
+  res.status(checks.status === 'ok' ? 200 : 503).json(checks)
+})
 
 if (!isProd && !isLoadTest) {
   app.use('/api/', (req, res, next) => {
