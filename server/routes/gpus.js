@@ -57,11 +57,14 @@ router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
   }
 
   if (search) {
-    filter.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { arch: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-    ]
+    if (search.length >= 2) {
+      filter.$text = { $search: search }
+    } else {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { arch: { $regex: search, $options: 'i' } },
+      ]
+    }
   }
   if (minPrice || maxPrice) {
     filter.price = {}
@@ -91,9 +94,20 @@ router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
 })
 
 router.get('/:id', async (req, res) => {
+  const cacheKey = `gpu:${req.params.id}`
+  const cached = await getCached(cacheKey)
+  if (cached) {
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=60')
+    res.set('X-Cache', 'HIT')
+    return res.json(cached)
+  }
+
   const gpu = await Gpu.findById(req.params.id).lean()
   if (!gpu) return res.status(404).json({ message: 'GPU not found' })
+  await setCache(cacheKey, gpu, 60000)
+
   res.set('Cache-Control', 'public, max-age=60, s-maxage=60')
+  res.set('X-Cache', 'MISS')
   res.json(gpu)
 })
 

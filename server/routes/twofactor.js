@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticator } from 'otplib'
+import { authenticator } from '@otplib/preset-default'
 import qrcode from 'qrcode'
 import protect from '../middleware/auth.js'
 import logger from '../config/logger.js'
@@ -10,7 +10,8 @@ router.post('/setup', protect, async (req, res) => {
   if (req.user.twoFactorEnabled) return res.status(400).json({ message: '2FA already enabled' })
 
   const secret = authenticator.generateSecret()
-  const otpauth = authenticator.keyuri(req.user.email || req.user.phone || req.user._id.toString(), 'hamro.ai', secret)
+  const label = req.user.email || req.user.phone || req.user._id.toString()
+  const otpauth = `otpauth://totp/hamro.ai:${encodeURIComponent(label)}?secret=${secret}&issuer=hamro.ai`
 
   req.user.twoFactorSecret = secret
   await req.user.save()

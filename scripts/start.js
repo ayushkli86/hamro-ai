@@ -19,7 +19,7 @@ if (!existsSync(distPath)) {
 }
 
 function startServer() {
-  const server = spawn('node', ['server/server.js'], {
+  const server = spawn('node', ['server/cluster.js'], {
     stdio: 'inherit',
     cwd: join(__dirname, '..'),
     env: { ...process.env },

@@ -36,32 +36,36 @@ if (!process.env.JWT_SECRET) {
   process.exit(1)
 }
 
+const isLoadTest = process.env.LOAD_TEST === 'true'
+const LOAD_MAX = 9_999_999
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: isLoadTest ? LOAD_MAX : 200,
   standardHeaders: true,
   legacyHeaders: false,
 })
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: isLoadTest ? LOAD_MAX : 10,
   message: { message: 'Too many attempts, try again later' },
 })
 
 const otpLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 1,
+  max: isLoadTest ? LOAD_MAX : 1,
   message: { message: 'Too many OTP requests. Try again in 1 minute.' },
 })
 
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: isLoadTest ? LOAD_MAX : 50,
   message: { message: 'Too many admin requests' },
 })
 
 const app = express()
+export { app }
 initPassport()
 app.use(passport.initialize())
 app.use((req, res, next) => { req.id = uuidv4().slice(0, 8); res.set('X-Request-Id', req.id); next() })
@@ -173,25 +177,28 @@ if (isProd) {
   })
 }
 
-const PORT = process.env.PORT || 5000
-const server = app.listen(PORT, () => {
-  logger.info({ port: PORT, mode: isProd ? 'production' : 'development' }, 'Server started')
-})
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+if (isMainModule) {
+  const PORT = process.env.PORT || 5000
+  const server = app.listen(PORT, () => {
+    logger.info({ port: PORT, mode: isProd ? 'production' : 'development' }, 'Server started')
+  })
 
-initSocket(server)
-connectDB()
+  initSocket(server)
+  connectDB()
 
-setInterval(async () => {
-  try {
-    const expired = await Order.updateMany(
-      { status: 'active', expiresAt: { $lt: new Date() } },
-      { $set: { status: 'completed', instanceStatus: 'terminated' } }
-    )
-    if (expired.modifiedCount > 0) logger.info({ count: expired.modifiedCount }, 'Auto-terminated expired orders')
-  } catch (err) {
-    logger.error({ err: err.message }, 'Order expiry check failed')
-  }
-}, 60000)
+  setInterval(async () => {
+    try {
+      const expired = await Order.updateMany(
+        { status: 'active', expiresAt: { $lt: new Date() } },
+        { $set: { status: 'completed', instanceStatus: 'terminated' } }
+      )
+      if (expired.modifiedCount > 0) logger.info({ count: expired.modifiedCount }, 'Auto-terminated expired orders')
+    } catch (err) {
+      logger.error({ err: err.message }, 'Order expiry check failed')
+    }
+  }, 60000)
 
-process.on('SIGTERM', () => { logger.info('SIGTERM received. Shutting down...'); server.close(() => process.exit(0)) })
-process.on('SIGINT', () => { logger.info('SIGINT received. Shutting down...'); server.close(() => process.exit(0)) })
+  process.on('SIGTERM', () => { logger.info('SIGTERM received. Shutting down...'); server.close(() => process.exit(0)) })
+  process.on('SIGINT', () => { logger.info('SIGINT received. Shutting down...'); server.close(() => process.exit(0)) })
+}

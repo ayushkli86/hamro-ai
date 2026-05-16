@@ -27,7 +27,7 @@ userSchema.index({ isAdmin: 1, createdAt: -1 })
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next()
-  this.password = await bcrypt.hash(this.password, 12)
+  this.password = await bcrypt.hash(this.password, 10)
   next()
 })
 
@@ -53,5 +53,13 @@ userSchema.methods.resetLoginAttempts = async function () {
   this.lockUntil = undefined
   await this.save()
 }
+
+userSchema.set('toJSON', {
+  transform(doc, ret) {
+    delete ret.password
+    delete ret.twoFactorSecret
+    return ret
+  },
+})
 
 export default mongoose.model('User', userSchema)
