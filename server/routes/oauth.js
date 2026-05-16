@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import User from '../models/User.js'
 import Otp from '../models/Otp.js'
 import logger from '../config/logger.js'
+import { sendSms } from '../config/sms.js'
 
 const router = express.Router()
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' })
@@ -40,6 +41,9 @@ router.post('/phone/send-otp', async (req, res) => {
   const code = crypto.randomInt(100000, 999999).toString()
   await Otp.deleteMany({ phone })
   await Otp.create({ phone, code, expiresAt: new Date(Date.now() + 5 * 60000) })
+
+  const message = `Your hamro.ai verification code is: ${code}. It expires in 5 minutes.`
+  await sendSms(phone, message)
 
   logger.info({ phone, code }, 'OTP sent')
   res.json({ message: 'OTP sent', code: process.env.NODE_ENV === 'production' ? undefined : code })
