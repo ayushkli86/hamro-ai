@@ -8,7 +8,7 @@ import protect from '../middleware/auth.js'
 import authLight from '../middleware/authLight.js'
 import { validate } from '../middleware/validate.js'
 import { orderCreateSchema, instanceActionSchema } from '../config/schemas.js'
-import { sendEmail } from '../config/email.js'
+import { enqueueEmail } from '../config/queue.js'
 import Transaction from '../models/Transaction.js'
 import logger from '../config/logger.js'
 import { renderInvoice } from '../config/invoice.js'
@@ -84,7 +84,7 @@ router.post('/', authLight, validate(orderCreateSchema), async (req, res) => {
 
     await session.commitTransaction()
 
-    sendEmail({
+    enqueueEmail({
       to: user.email,
       subject: `Order Confirmed — ${gpu.name}`,
       html: `<h2>Order Confirmed</h2><p>You rented <strong>${gpu.name}</strong> for <strong>${hours} hour(s)</strong> at <strong>$${cost.toFixed(2)}</strong>.</p><p>Region: Nepal</p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard">View in Dashboard →</a></p>`,

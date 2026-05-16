@@ -6,7 +6,7 @@ import protect from '../middleware/auth.js'
 import authLight from '../middleware/authLight.js'
 import { validate } from '../middleware/validate.js'
 import { signupSchema, loginSchema, topupSchema, passwordChangeSchema } from '../config/schemas.js'
-import { sendEmail } from '../config/email.js'
+import { enqueueEmail } from '../config/queue.js'
 import Transaction from '../models/Transaction.js'
 import logger from '../config/logger.js'
 
@@ -48,7 +48,7 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
   const verificationToken = crypto.randomBytes(32).toString('hex')
   const user = await User.create({ name, email, password, verificationToken, verificationTokenExpires: Date.now() + 24 * 3600000 })
 
-  sendEmail({
+  enqueueEmail({
     to: email,
     subject: 'Welcome to hamro.ai!',
     html: `<h2>Welcome ${name}!</h2><p>Your hamro.ai account is ready. You have <strong>$${user.balance}</strong> credit to start renting GPUs in Nepal.</p><p>Please verify your email: <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}">Verify Email →</a></p><p><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard">Go to Dashboard →</a></p>`,
@@ -118,7 +118,7 @@ router.post('/forgot-password', async (req, res) => {
   user.resetPasswordToken = resetToken
   user.resetPasswordExpires = Date.now() + 3600000
   await user.save()
-  sendEmail({
+  enqueueEmail({
     to: email,
     subject: 'Password Reset — hamro.ai',
     html: `<h2>Password Reset</h2><p>Click to reset: <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}">Reset Password →</a></p><p>Link expires in 1 hour.</p>`,
