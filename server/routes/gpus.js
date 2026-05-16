@@ -76,12 +76,19 @@ router.get('/', validateQuery(gpuQuerySchema), async (req, res) => {
   if (availability) filter.availability = availability
   if (region) filter.region = region
 
-  const sortOption = sort === 'price_asc' ? 'price' : sort === 'price_desc' ? '-price' : sort === 'name' ? 'name' : sort === 'vram' ? '-vramGB' : '-createdAt'
   const skip = (parseInt(page) - 1) * parseInt(limit)
   const pageSize = Math.min(parseInt(limit), 100)
 
+  let projection = 'name arch vram vramGB price rangeLow rangeHigh availability inStock bandwidth cpu ram disk description region'
+  let sortOption = sort === 'price_asc' ? 'price' : sort === 'price_desc' ? '-price' : sort === 'name' ? 'name' : sort === 'vram' ? '-vramGB' : '-createdAt'
+
+  if (filter.$text) {
+    projection = { name: 1, arch: 1, vram: 1, vramGB: 1, price: 1, rangeLow: 1, rangeHigh: 1, availability: 1, inStock: 1, bandwidth: 1, cpu: 1, ram: 1, disk: 1, description: 1, region: 1, score: { $meta: 'textScore' } }
+    if (!sort || sort === 'newest') sortOption = { score: { $meta: 'textScore' } }
+  }
+
   const [gpus, total] = await Promise.all([
-    Gpu.find(filter).sort(sortOption).skip(skip).limit(pageSize).lean().select('name arch vram vramGB price rangeLow rangeHigh availability inStock bandwidth cpu ram disk description region'),
+    Gpu.find(filter).sort(sortOption).skip(skip).limit(pageSize).lean().select(projection),
     Gpu.countDocuments(filter),
   ])
 
