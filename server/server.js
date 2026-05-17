@@ -28,6 +28,8 @@ import twofactorRoutes from './routes/twofactor.js'
 import providerRoutes from './routes/provider.js'
 import agentRoutes from './routes/agent.js'
 import jobRoutes from './routes/jobs.js'
+import profileRoutes from './routes/profile.js'
+import uploadRoutes from './routes/upload.js'
 import { initSocket } from './config/socket.js'
 import { initPassport } from './config/passport.js'
 import swaggerUi from 'swagger-ui-express'
@@ -191,6 +193,9 @@ app.use('/api/auth/2fa', twofactorRoutes)
 app.use('/api/provider', providerRoutes)
 app.use('/api/agent', agentRoutes)
 app.use('/api/jobs', jobRoutes)
+app.use('/api/profile', profileRoutes)
+app.use('/api/upload', uploadRoutes)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.get('/api/seed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not available in production' })

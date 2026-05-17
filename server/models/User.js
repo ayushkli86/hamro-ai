@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
   authProvider: { type: String, enum: ['email', 'google', 'apple', 'phone'], default: 'email' },
   twoFactorSecret: String,
   twoFactorEnabled: { type: Boolean, default: false },
+  avatar: { type: String, default: '' },
 }, { timestamps: true })
 
 userSchema.index({ isAdmin: 1, createdAt: -1 })

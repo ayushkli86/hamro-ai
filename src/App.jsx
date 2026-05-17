@@ -30,6 +30,7 @@ import Enterprise from './pages/Enterprise'
 import Explore from './pages/Explore'
 import Trust from './pages/Trust'
 import Transactions from './pages/Transactions'
+import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 import ErrorBoundary from './components/ErrorBoundary'
 import ThemeToggle from './components/ThemeToggle'
@@ -820,6 +821,7 @@ export default function App() {
         <Route path="/enterprise" element={<Enterprise />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/trust" element={<Trust />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

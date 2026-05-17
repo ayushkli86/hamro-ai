@@ -51,6 +51,23 @@ export const apiKeyApi = {
   revoke: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
 }
 
+export const profileApi = {
+  get: () => request('/profile'),
+  update: (body) => request('/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  uploadAvatar: async (file) => {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const res = await fetch(`${API}/upload/avatar`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: formData,
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Upload failed')
+    return data
+  },
+}
+
 export const adminApi = {
   users: () => request('/admin/users'),
   orders: () => request('/admin/orders'),
