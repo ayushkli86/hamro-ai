@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
 import Price from '../components/Price'
@@ -9,12 +9,38 @@ const API = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'
 export default function Transactions() {
   const [txns, setTxns] = useState([])
   const [loading, setLoading] = useState(true)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null')
     if (!user?.token) { setLoading(false); return }
     fetch(`${API}/transactions`, { headers: { Authorization: `Bearer ${user.token}` } })
       .then(r => r.json()).then(setTxns).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const handleDownload = useCallback(async () => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null')
+    if (!user?.token) return
+    setDownloading(true)
+    try {
+      const res = await fetch(`${API}/transactions/export`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'transactions.csv'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silent failure
+    } finally {
+      setDownloading(false)
+    }
   }, [])
 
   return (
@@ -30,12 +56,13 @@ export default function Transactions() {
       ) : (
         <>
           <div className="flex justify-end mb-4">
-            <a
-              href={`${API}/transactions/export`}
-              className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold no-underline inline-block"
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold"
             >
-              Download CSV
-            </a>
+              {downloading ? 'Downloading…' : 'Download CSV'}
+            </button>
           </div>
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -55,7 +82,7 @@ export default function Transactions() {
               ))}
             </tbody>
           </table>
-          </div>
+            </div>
         </>
       )}
     </PageLayout>
