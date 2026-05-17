@@ -24,6 +24,7 @@ import adminRoutes from './routes/admin.js'
 import paymentRoutes from './routes/payment.js'
 import oauthRoutes from './routes/oauth.js'
 import stripeRoutes from './routes/stripe.js'
+import khaltiRoutes from './routes/khalti.js'
 import twofactorRoutes from './routes/twofactor.js'
 import providerRoutes from './routes/provider.js'
 import agentRoutes from './routes/agent.js'
@@ -185,6 +186,7 @@ app.use('/api/subscribe', subscribeRoutes)
 app.use('/api/admin', adminLimiter, adminRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/stripe', stripeRoutes)
+app.use('/api/khalti', khaltiRoutes)
 app.use('/api/auth/phone/send-otp', otpLimiter)
 app.use('/api/auth', oauthRoutes)
 app.use('/api/auth/2fa', twofactorRoutes)
