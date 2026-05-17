@@ -51,6 +51,12 @@ export const apiKeyApi = {
   revoke: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
 }
 
+export const jobsApi = {
+  list: () => request('/jobs'),
+  create: (body) => request('/jobs', { method: 'POST', body: JSON.stringify(body) }),
+  get: (id) => request(`/jobs/${id}`),
+}
+
 export const adminApi = {
   users: () => request('/admin/users'),
   orders: () => request('/admin/orders'),
