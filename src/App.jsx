@@ -31,6 +31,9 @@ import Explore from './pages/Explore'
 import Trust from './pages/Trust'
 import Transactions from './pages/Transactions'
 import NotFound from './pages/NotFound'
+import ProviderDashboard from './pages/ProviderDashboard'
+import Jobs from './pages/Jobs'
+import ProviderSetup from './pages/ProviderSetup'
 import ErrorBoundary from './components/ErrorBoundary'
 import ThemeToggle from './components/ThemeToggle'
 import CurrencyToggle from './components/CurrencyToggle'
@@ -821,6 +824,9 @@ export default function App() {
         <Route path="/explore" element={<Explore />} />
         <Route path="/trust" element={<Trust />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/provider" element={<ProtectedRoute><ErrorBoundary><ProviderDashboard /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><ErrorBoundary><Jobs /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/earn" element={<ProviderSetup />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

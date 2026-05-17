@@ -60,3 +60,25 @@ export const adminApi = {
   deleteGpu: (id) => request(`/admin/gpus/${id}`, { method: 'DELETE' }),
   seed: () => request('/admin/seed', { method: 'POST' }),
 }
+
+export const providerApi = {
+  listGpus: () => request('/provider/gpus'),
+  registerGpu: (body) => request('/provider/gpus', { method: 'POST', body: JSON.stringify(body) }),
+  updateGpu: (id, body) => request(`/provider/gpus/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  earnings: () => request('/provider/earnings'),
+  withdraw: () => request('/provider/withdraw', { method: 'POST' }),
+}
+
+export const jobApi = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request(`/jobs${qs ? '?' + qs : ''}`)
+  },
+  get: (id) => request(`/jobs/${id}`),
+  submit: (body) => request('/jobs', { method: 'POST', body: JSON.stringify(body) }),
+}
+
+export const profileApi = {
+  get: () => request('/profile'),
+  update: (body) => request('/profile', { method: 'PUT', body: JSON.stringify(body) }),
+}
