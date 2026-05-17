@@ -9,7 +9,10 @@ export function SocketProvider({ children }) {
   const [priceAlerts, setPriceAlerts] = useState([])
 
   useEffect(() => {
-    const s = io(WS)
+    const s = io(WS, {
+      auth: { token: JSON.parse(localStorage.getItem('user') || '{}')?.token },
+      transports: ['polling'],
+    })
     setSocket(s)
 
     s.on('priceUpdate', (data) => {

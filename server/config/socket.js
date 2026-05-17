@@ -3,6 +3,7 @@ import { createAdapter } from '@socket.io/redis-adapter'
 import { createClient } from 'ioredis'
 import Gpu from '../models/Gpu.js'
 import logger from './logger.js'
+import { socketAuth } from '../middleware/socketAuth.js'
 
 let io
 
@@ -12,6 +13,8 @@ export function initSocket(server) {
     cors: { origin: process.env.FRONTEND_URL || (isCpanel ? '*' : 'http://localhost:5173'), methods: ['GET', 'POST'] },
     transports: isCpanel ? ['polling'] : ['websocket', 'polling'],
   })
+
+  if (process.env.CPANEL !== 'true') io.use(socketAuth)
 
   if (process.env.REDIS_URL) {
     const pub = createClient(process.env.REDIS_URL)
