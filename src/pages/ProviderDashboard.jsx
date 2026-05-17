@@ -30,6 +30,7 @@ export default function ProviderDashboard() {
   const [earnings, setEarnings] = useState([])
   const [balance, setBalance] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [toggling, setToggling] = useState(null)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawError, setWithdrawError] = useState('')
@@ -40,8 +41,8 @@ export default function ProviderDashboard() {
   const [region, setRegion] = useState('')
   const [registering, setRegistering] = useState(false)
 
-  const loadData = () => {
-    setLoading(true)
+  const loadData = (silent = false) => {
+    if (silent) { setRefreshing(true) } else { setLoading(true) }
     Promise.all([
       api('/provider/gpus'),
       api('/provider/earnings'),
@@ -52,7 +53,7 @@ export default function ProviderDashboard() {
         setBalance(earningsData.balance ?? 0)
       })
       .catch((err) => toast(err.message, 'error'))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }
 
   useEffect(() => { loadData() }, [])
@@ -88,8 +89,8 @@ export default function ProviderDashboard() {
         method: 'PATCH',
         body: JSON.stringify({ isAvailable: !current }),
       })
-      setGpus((prev) => prev.map((g) => (g._id === id ? { ...g, isAvailable: !current } : g)))
-      toast(`GPU ${!current ? 'available' : 'unavailable'}`, 'success')
+      setGpus((prev) => prev.map((g) => (g._id === id ? { ...g, isAvailable: updated.isAvailable ?? !current } : g)))
+      toast(`GPU ${updated.isAvailable ? 'available' : 'unavailable'}`, 'success')
     } catch (err) {
       toast(err.message, 'error')
     } finally {
@@ -99,11 +100,15 @@ export default function ProviderDashboard() {
 
   const withdraw = async () => {
     setWithdrawError('')
+    if (balance < 5) {
+      setWithdrawError('Minimum withdrawal is $5. Your balance is too low.')
+      return toast('Minimum withdrawal is $5', 'error')
+    }
     setWithdrawing(true)
     try {
       const result = await api('/provider/withdraw', { method: 'POST' })
       toast(result.message || 'Withdrawal successful', 'success')
-      loadData()
+      loadData(true)
     } catch (err) {
       setWithdrawError(err.message)
       toast(err.message, 'error')

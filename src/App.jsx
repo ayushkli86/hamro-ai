@@ -30,6 +30,7 @@ import Enterprise from './pages/Enterprise'
 import Explore from './pages/Explore'
 import Trust from './pages/Trust'
 import Transactions from './pages/Transactions'
+import ProviderDashboard from './pages/ProviderDashboard'
 import NotFound from './pages/NotFound'
 import ErrorBoundary from './components/ErrorBoundary'
 import ThemeToggle from './components/ThemeToggle'
@@ -796,6 +797,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/provider" element={<ProtectedRoute><ErrorBoundary><ProviderDashboard /></ErrorBoundary></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/pricing" element={<Pricing />} />
