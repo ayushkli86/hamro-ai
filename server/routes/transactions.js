@@ -10,4 +10,17 @@ router.get('/', authLight, async (req, res) => {
   res.json(transactions)
 })
 
+router.get('/export', authLight, async (req, res) => {
+  const txns = await Transaction.find({ user: req.user.id }).sort('-createdAt').lean()
+  const header = 'Date,Type,Amount,Description,Reference\n'
+  const rows = txns.map(t => {
+    const date = new Date(t.createdAt).toISOString().split('T')[0]
+    const desc = (t.description || '').replace(/"/g, '""')
+    return `${date},${t.type},${t.amount},"${desc}",${t.referenceId || ''}`
+  }).join('\n')
+  res.setHeader('Content-Type', 'text/csv')
+  res.setHeader('Content-Disposition', 'attachment; filename="transactions.csv"')
+  res.send(header + rows)
+})
+
 export default router

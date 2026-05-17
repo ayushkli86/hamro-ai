@@ -28,7 +28,16 @@ export default function Transactions() {
           <Link to="/dashboard" className="text-sm text-[#315fff] hover:underline mt-2 inline-block">Go to Dashboard →</Link>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+          <div className="flex justify-end mb-4">
+            <a
+              href={`${API}/transactions/export`}
+              className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold no-underline inline-block"
+            >
+              Download CSV
+            </a>
+          </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-gray-400 border-b border-white/10 text-left">
@@ -46,7 +55,8 @@ export default function Transactions() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </PageLayout>
   )
