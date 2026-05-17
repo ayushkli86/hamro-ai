@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { authApi, profileApi } from '../api'
 import ThemeToggle from '../components/ThemeToggle'
 import CurrencyToggle from '../components/CurrencyToggle'
-import { Link } from 'react-router-dom'
 import Price from '../components/Price'
+
+const API = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'
 
 export default function Profile() {
   const { user, logout, refreshUser } = useAuth()
@@ -23,17 +25,16 @@ export default function Profile() {
 
   useEffect(() => { document.title = 'Profile — hamro.ai' }, [])
 
-  const load = () => {
-    setLoading(true)
+  const avatarUrl = (path) => path ? `${API.replace('/api', '')}${path}` : null
+
+  useEffect(() => {
     profileApi.get().then((p) => {
       setProfile(p)
       setName(p.name || '')
       setPhone(p.phone || '')
     }).catch((err) => toast(err.message, 'error'))
       .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [])
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
@@ -105,7 +106,7 @@ export default function Profile() {
             <div className="flex items-center gap-6 mb-8">
               <div className="relative">
                 {profile?.avatar ? (
-                  <img src={profile.avatar} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-white/10" />
+                  <img src={avatarUrl(profile.avatar)} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-white/10" />
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-[#161616] border-2 border-white/10 flex items-center justify-center text-2xl text-gray-500">
                     {(profile?.name || '?')[0]}

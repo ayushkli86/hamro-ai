@@ -139,7 +139,9 @@ router.post('/reset-password', async (req, res) => {
 })
 
 router.get('/me', authLight, async (req, res) => {
-  res.json({ _id: req.user.id, name: req.user.name, email: req.user.email, balance: req.user.balance, emailVerified: req.user.emailVerified })
+  const user = await User.findById(req.user.id).select('name email balance avatar phone emailVerified').lean()
+  if (!user) return res.status(404).json({ message: 'User not found' })
+  res.json({ ...user, _id: user._id })
 })
 
 router.post('/topup', authLight, validate(topupSchema), async (req, res) => {

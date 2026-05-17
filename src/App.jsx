@@ -821,7 +821,7 @@ export default function App() {
         <Route path="/enterprise" element={<Enterprise />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/trust" element={<Trust />} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><Profile /></ErrorBoundary></ProtectedRoute>} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
