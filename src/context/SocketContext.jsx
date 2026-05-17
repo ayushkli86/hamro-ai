@@ -9,9 +9,11 @@ export function SocketProvider({ children }) {
   const [priceAlerts, setPriceAlerts] = useState([])
 
   useEffect(() => {
+    let token
+    try { token = JSON.parse(localStorage.getItem('user') || '{}')?.token } catch { token = undefined }
     const s = io(WS, {
-      auth: { token: JSON.parse(localStorage.getItem('user') || '{}')?.token },
-      transports: ['polling'],
+      auth: { token },
+      transports: import.meta.env.PROD ? ['polling'] : ['websocket', 'polling'],
     })
     setSocket(s)
 

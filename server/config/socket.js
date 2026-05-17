@@ -13,8 +13,7 @@ export function initSocket(server) {
     cors: { origin: process.env.FRONTEND_URL || (isCpanel ? '*' : 'http://localhost:5173'), methods: ['GET', 'POST'] },
     transports: isCpanel ? ['polling'] : ['websocket', 'polling'],
   })
-
-  if (process.env.CPANEL !== 'true') io.use(socketAuth)
+  if (!isCpanel) io.use(socketAuth)
 
   if (process.env.REDIS_URL) {
     const pub = createClient(process.env.REDIS_URL)
