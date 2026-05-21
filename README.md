@@ -1,16 +1,33 @@
-# React + Vite
+# Hamro AI — P2P GPU Marketplace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A platform where laptop owners can rent out their GPUs for AI/ML workloads. Built with React, Node.js, and Docker.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- P2P GPU rental marketplace
+- Production Docker + Nginx reverse proxy setup
+- Background email queue with Bull + Redis
+- Redis rate-limiter and health checks
+- cPanel deployment support
 
-## React Compiler
+## Quick Start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Copy environment config
+cp .env.example .env
 
-## Expanding the ESLint configuration
+# Start with Docker
+docker compose up -d
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Or run locally
+npm install
+npm run dev
+```
+
+## Deployment
+
+See `.env.cpanel` for cPanel deployment configuration. The project includes full Docker support with Nginx reverse proxy.
+
+## License
+
+MIT
